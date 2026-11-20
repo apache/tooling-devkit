@@ -1,0 +1,26 @@
+# What the toolchain writes again, and what a checkout keeps to itself: worktree-held.sh treats the
+# first group as nothing to lose, and config.yaml as somebody's own.
+.venv/
+.pytest_cache/
+.ruff_cache/
+.complexipy_cache/
+.import_linter_cache/
+.hypothesis/
+__pycache__/
+htmlcov/
+.coverage
+.coverage.*
+coverage.json
+assets/node_modules/
+assets/.yarn/install-state.gz
+assets/stats.html
+assets/coverage/
+e2e/node_modules/
+e2e/test-results/
+e2e/screenshots/
+app/client/static/assets/
+state/
+state-e2e/
+state-preview/
+
+config.yaml

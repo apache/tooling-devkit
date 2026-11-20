@@ -1,0 +1,40 @@
+
+name: Test the kit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  shell-and-python:
+    name: Shell tests, and the Python compiles
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run the shell tests
+        run: |
+          failed=0
+          for t in .claude/hooks/guard-bash.test.sh scripts/*.test.sh scripts/ci/*.test.sh; do
+              sh "$t" || { echo "FAILED: $t" >&2; failed=1; }
+          done
+          exit "$failed"
+      # the scripts use syntax of 3.14; the pin is `.python-version`, as in the services
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version-file: .python-version
+      - name: Compile the Python, and import what scripts/ci imports
+        run: |
+          python3 -I -m py_compile scripts/ci/*.py
+          cd scripts/ci
+          python3 -I -c "
+          import sys
+          sys.path.insert(0, '.')
+          import behaviour_pulls, behaviour_gate, behaviour_selection, quality_meters, quality_allowances, quality_moves, trailers, bases, changed, verify
+          "
