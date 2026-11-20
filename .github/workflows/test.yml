@@ -25,10 +25,10 @@ jobs:
               sh "$t" || { echo "FAILED: $t" >&2; failed=1; }
           done
           exit "$failed"
-      # the scripts use syntax of 3.14, which is what the services pin (`.python-version`)
+      # the scripts use syntax of 3.14; the pin is `.python-version`, as in the services
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: '3.14'
+          python-version-file: .python-version
       - name: Compile the Python, and import what scripts/ci imports
         run: |
           python3 -I -m py_compile scripts/ci/*.py
