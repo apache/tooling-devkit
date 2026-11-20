@@ -1,0 +1,33 @@
+github:
+  description: "Developer files shared by the Apache Tooling repositories: agent rules, Bash guard, commands, scripts and CI workflows"
+  del_branch_on_merge: true
+  features:
+    issues: true
+  enabled_merge_buttons:
+    squash:  true
+    squash_commit_message: DEFAULT
+    merge:   false
+    rebase:  true
+  # main takes a change only through a pull request, so every change has run the kit's tests
+  # first. No approval is required by GitHub: a change to the shared rules or the guard is
+  # reviewed by the Tooling PMC (AGENTS.shared.md), which a review count cannot say. No status
+  # check is required: removing a required check later needs an Infra ticket.
+  protected_branches:
+    main:
+      required_linear_history: true
+      required_pull_request_reviews:
+        required_approving_review_count: 0
+  custom_subjects:
+    new_pr: "[PR] {title} ({repository})"
+    close_pr: "Re: [PR] {title} ({repository})"
+    comment_pr: "Re: [PR] {title} ({repository})"
+    merge_pr: "Re: [PR] {title} ({repository})"
+    new_issue: "[I] {title} ({repository})"
+    comment_issue: "Re: [I] {title} ({repository})"
+    close_issue: "Re: [I] {title} ({repository})"
+    catchall: "[GH] {title} ({repository})"
+
+notifications:
+  commits:      private-commits@tooling.apache.org
+  issues:       private-commits@tooling.apache.org
+  pullrequests: private-commits@tooling.apache.org
