@@ -38,7 +38,7 @@ repo_root=$(CDPATH='' cd -- "$script_dir/.." && pwd)
 suffix=$(checkout_suffix "$repo_root")
 
 PLAYWRIGHT_IMAGE="${DEVKIT_PLAYWRIGHT_IMAGE:-mcr.microsoft.com/playwright:v1.61.1-noble}"
-NODE_VOLUME="${DEVKIT_E2E_NODE_VOLUME:-agenda-e2e-node$suffix}"
+NODE_VOLUME="${DEVKIT_E2E_NODE_VOLUME:-$DEVKIT_SERVICE-e2e-node$suffix}"
 
 # Already inside a disposable environment (DEVKIT_ISOLATED=1): no image to run it in.
 if [ "${DEVKIT_ISOLATED:-}" = 1 ]; then
@@ -68,7 +68,7 @@ else
 fi
 
 echo "type-checking the end-to-end specs" >&2
-own_volume "$NODE_VOLUME" "agenda-e2e-node$suffix"
+own_volume "$NODE_VOLUME" "$DEVKIT_SERVICE-e2e-node$suffix"
 # The inner script runs inside the container, so the single quotes around it are
 # deliberate - as in e2e-container.sh, which quotes its own the same way.
 status=0

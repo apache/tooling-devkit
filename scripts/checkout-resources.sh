@@ -7,11 +7,11 @@
 # worktree-done.sh removes a checkout's own when its work is over; container-gc.sh finds
 # what was left by checkouts that are gone.
 #
-# What a checkout makes for itself carries its path (PATH_LABEL). bat.checkout, which
+# What a checkout makes for itself carries its path (PATH_LABEL). devkit.checkout, which
 # container.sh also sets, names the checkout for a person reading `podman ps`; this one is
 # for the scripts that remove things.
 
-PATH_LABEL=bat.checkout-path
+PATH_LABEL=devkit.checkout-path
 # In this order wherever all three are removed: a network or volume a container is still
 # attached to cannot go. Read by the sourcing scripts.
 # shellcheck disable=SC2034
@@ -88,11 +88,11 @@ listing() {
 # The suffix a name was derived from, or nothing for a name that is not one of the scripts'.
 suffix_of() {
     printf '%s\n' "$1" | sed -n -E \
-        -e 's/^agenda-(venv|node|e2e-node)(-.+)$/\2/p' \
-        -e 's/^bat-run(-.+)-[0-9]+$/\1/p' \
-        -e 's/^bat-keep(-.+)$/\1/p' \
-        -e 's/^bat-e2e-server(-.+)$/\1/p' \
-        -e 's/^bat-e2e-net(-.+)$/\1/p'
+        -e "s/^$DEVKIT_SERVICE-(venv|node|e2e-node)(-.+)\$/\\2/p" \
+        -e "s/^$DEVKIT_SERVICE-run(-.+)-[0-9]+\$/\\1/p" \
+        -e "s/^$DEVKIT_SERVICE-keep(-.+)\$/\\1/p" \
+        -e "s/^$DEVKIT_SERVICE-e2e-server(-.+)\$/\\1/p" \
+        -e "s/^$DEVKIT_SERVICE-e2e-net(-.+)\$/\\1/p"
 }
 
 # The suffix of every checkout of this repository still on disk, one a line.

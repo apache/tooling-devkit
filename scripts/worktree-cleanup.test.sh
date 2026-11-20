@@ -77,12 +77,13 @@ setup() {
     mkdir -p "$work/repo/scripts"
     cp "$here/checkout-id.sh" "$here/checkout-resources.sh" "$here/worktree-done.sh" "$here/worktree-held.sh" \
         "$here/container-gc.sh" "$work/repo/scripts/"
+    cp "$here/../devkit.conf" "$work/repo/"
     (
         cd "$work/repo"
         git config user.email t@example.org
         git config user.name test
         printf 'state/\n' > .gitignore
-        git add scripts .gitignore
+        git add scripts .gitignore devkit.conf
         git commit -qm init
         git remote add origin "$work/remote.git"
         git push -q origin main
@@ -101,19 +102,19 @@ setup() {
     rm -rf "$work/repo-deleted"
 
     for wt in pushed local dirty locked deleted; do
-        printf '%s\n' "agenda-venv-repo-$wt" "agenda-node-repo-$wt" "agenda-e2e-node-repo-$wt"
+        printf '%s\n' "devkit-venv-repo-$wt" "devkit-node-repo-$wt" "devkit-e2e-node-repo-$wt"
     done > "$work/stub/volumes"
     # the primary's plain names, and another project's that look a little like ours
-    printf '%s\n' agenda-venv agenda-node agenda-cert vscode agenda-venv-elsewhere_x >> "$work/stub/volumes"
+    printf '%s\n' devkit-venv devkit-node other-cert vscode devkit-venv-elsewhere_x >> "$work/stub/volumes"
     # labelled: by the path, whatever the name says
-    printf '%s\t%s\n' agenda-venv-agent-gone "$work/no-longer-here" agenda-venv-agent-live "$work/repo-local" \
+    printf '%s\t%s\n' devkit-venv-agent-gone "$work/no-longer-here" devkit-venv-agent-live "$work/repo-local" \
         volume-of-pushed "$work/repo-pushed" >> "$work/stub/volumes"
-    printf '%s\n' bat-e2e-server-repo-pushed bat-run-repo-deleted-4242 bat-run-1234 bat-e2e-server \
-        bat-keep-repo-deleted > "$work/stub/containers"
+    printf '%s\n' devkit-e2e-server-repo-pushed devkit-run-repo-deleted-4242 devkit-run-1234 devkit-e2e-server \
+        devkit-keep-repo-deleted > "$work/stub/containers"
     # the last: a name derived from the pushed worktree, but labelled as another checkout's
     printf '%s\t%s\n' run-of-a-gone-one "$work/no-longer-here" run-of-pushed "$work/repo-pushed" \
-        bat-run-repo-pushed-77 "$work/repo-local" >> "$work/stub/containers"
-    printf '%s\n' bat-e2e-net-repo-pushed bat-e2e-net-repo-deleted bat-e2e-net podman > "$work/stub/networks"
+        devkit-run-repo-pushed-77 "$work/repo-local" >> "$work/stub/containers"
+    printf '%s\n' devkit-e2e-net-repo-pushed devkit-e2e-net-repo-deleted devkit-e2e-net podman > "$work/stub/networks"
     printf '%s\t%s\n' net-of-a-live-one "$work/repo-local" >> "$work/stub/networks"
 }
 
@@ -130,33 +131,33 @@ setup
 run "$work/repo/scripts/container-gc.sh"
 [ "$status" -eq 0 ] || fail "the dry run exited $status: $(cat "$work/out")"
 nothing_removed "the dry run removed something"
-grep -q 'agenda-venv-repo-deleted' "$work/out" || fail "the dry run did not list the gone worktree's volume"
+grep -q 'devkit-venv-repo-deleted' "$work/out" || fail "the dry run did not list the gone worktree's volume"
 if grep -q 'repo-pushed\|repo-local\|repo-dirty\|repo-locked' "$work/out"; then
     fail "the dry run listed a live worktree's: $(cat "$work/out")"
 fi
-if ! grep -q 'left alone' "$work/out" || ! grep -q '^  volume agenda-venv-elsewhere_x' "$work/out"; then
+if ! grep -q 'left alone' "$work/out" || ! grep -q '^  volume devkit-venv-elsewhere_x' "$work/out"; then
     fail "a name that only looks like ours was not reported as left alone: $(cat "$work/out")"
 fi
 
 run "$work/repo/scripts/container-gc.sh" --yes
-for name in "volume agenda-venv-repo-deleted" "volume agenda-node-repo-deleted" \
-    "volume agenda-e2e-node-repo-deleted" "container bat-run-repo-deleted-4242" \
-    "container bat-keep-repo-deleted" "network bat-e2e-net-repo-deleted" \
-    "volume agenda-venv-agent-gone" "container run-of-a-gone-one"; do
+for name in "volume devkit-venv-repo-deleted" "volume devkit-node-repo-deleted" \
+    "volume devkit-e2e-node-repo-deleted" "container devkit-run-repo-deleted-4242" \
+    "container devkit-keep-repo-deleted" "network devkit-e2e-net-repo-deleted" \
+    "volume devkit-venv-agent-gone" "container run-of-a-gone-one"; do
     removed "$name" || fail "--yes left '$name', which belongs to a checkout that is gone"
 done
-for name in agenda-venv agenda-node agenda-cert vscode agenda-venv-elsewhere_x bat-run-1234 \
-    bat-e2e-server bat-e2e-net podman agenda-venv-repo-pushed bat-e2e-server-repo-pushed \
-    agenda-venv-agent-live net-of-a-live-one run-of-pushed volume-of-pushed bat-run-repo-pushed-77; do
+for name in devkit-venv devkit-node other-cert vscode devkit-venv-elsewhere_x devkit-run-1234 \
+    devkit-e2e-server devkit-e2e-net podman devkit-venv-repo-pushed devkit-e2e-server-repo-pushed \
+    devkit-venv-agent-live net-of-a-live-one run-of-pushed volume-of-pushed devkit-run-repo-pushed-77; do
     if grep -q " $name\$" "$work/removed"; then fail "--yes removed '$name', which is not a gone checkout's"; fi
 done
 
 # A worktree of another clone of this repository, beside this one, is not this one's to judge.
 setup
 mkdir -p "$work/repo-of-another-clone"
-echo agenda-venv-repo-of-another-clone >> "$work/stub/volumes"
+echo devkit-venv-repo-of-another-clone >> "$work/stub/volumes"
 run "$work/repo/scripts/container-gc.sh" --yes
-if removed "volume agenda-venv-repo-of-another-clone"; then fail "a directory beside the primary had its volume swept"; fi
+if removed "volume devkit-venv-repo-of-another-clone"; then fail "a directory beside the primary had its volume swept"; fi
 rm -rf "$work/repo-of-another-clone"
 
 # It must not take a worktree list git could not give for "every checkout is gone".
@@ -175,14 +176,14 @@ setup
 run "$work/repo/scripts/worktree-done.sh" "$work/repo-pushed"
 [ "$status" -eq 0 ] || fail "finishing a pushed worktree exited $status: $(cat "$work/out")"
 if [ -d "$work/repo-pushed" ]; then fail "the pushed worktree is still there"; fi
-for name in "volume agenda-venv-repo-pushed" "volume agenda-node-repo-pushed" \
-    "volume agenda-e2e-node-repo-pushed" "container bat-e2e-server-repo-pushed" \
-    "network bat-e2e-net-repo-pushed" "container run-of-pushed" "volume volume-of-pushed"; do
+for name in "volume devkit-venv-repo-pushed" "volume devkit-node-repo-pushed" \
+    "volume devkit-e2e-node-repo-pushed" "container devkit-e2e-server-repo-pushed" \
+    "network devkit-e2e-net-repo-pushed" "container run-of-pushed" "volume volume-of-pushed"; do
     removed "$name" || fail "finishing it left '$name'"
 done
 others=$(grep -v -e repo-pushed -e '^container run-of-pushed$' -e '^volume volume-of-pushed$' "$work/removed" || true)
 [ -z "$others" ] || fail "finishing it removed another checkout's: $others"
-if removed "container bat-run-repo-pushed-77"; then fail "finishing it removed what is labelled as another checkout's"; fi
+if removed "container devkit-run-repo-pushed-77"; then fail "finishing it removed what is labelled as another checkout's"; fi
 if git -C "$work/repo" rev-parse --verify -q feat/pushed >/dev/null; then
     fail "its branch is all on the remote and was kept"
 fi
@@ -235,15 +236,15 @@ nothing_removed "a detached HEAD was refused"
     export PATH STUB_DIR CREATED
     # shellcheck source=scripts/checkout-resources.sh
     . "$here/checkout-resources.sh"
-    own_volume agenda-venv-repo-pushed-new agenda-venv-repo-pushed-new
-    own_volume agenda-venv agenda-venv-repo-pushed
-    own_volume shared-venv agenda-venv-repo-pushed
+    own_volume devkit-venv-repo-pushed-new devkit-venv-repo-pushed-new
+    own_volume devkit-venv devkit-venv-repo-pushed
+    own_volume shared-venv devkit-venv-repo-pushed
     suffix=''
-    own_volume agenda-venv agenda-venv
+    own_volume devkit-venv devkit-venv
 )
-grep -q "^volume agenda-venv-repo-pushed-new bat.checkout-path=$work/repo-pushed\$" "$work/created" ||
+grep -q "^volume devkit-venv-repo-pushed-new devkit.checkout-path=$work/repo-pushed\$" "$work/created" ||
     fail "a name the checkout derives was not created labelled with it: $(cat "$work/created")"
-if grep -q '^volume agenda-venv \|^volume shared-venv ' "$work/created"; then
+if grep -q '^volume devkit-venv \|^volume shared-venv ' "$work/created"; then
     fail "a name given outright, or the primary's, was labelled: $(cat "$work/created")"
 fi
 

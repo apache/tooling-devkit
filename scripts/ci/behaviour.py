@@ -15,12 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-"""Whether this change alters what BAT answers, and whether it says it means to.
+"""Whether this change alters what the app answers, and whether it says it means to.
 
     scripts/container.sh uv run scripts/ci/behaviour.py base     # record with the merge base
     scripts/container.sh uv run scripts/ci/behaviour.py check    # record with this checkout, compare
 
-What is recorded is `tests/behaviour`: every GET route as each reader is answered, the files BAT
+What is recorded is `tests/behaviour`: every GET route as each reader is answered, the files the app
 renders to commit or publish, and what its scheduled tasks send and store, all from the test
 fixture on a pinned clock. Nothing of it is committed. `base` checks the commit this branch would
 merge into out into a throwaway worktree and has *that* commit record itself, with its own
@@ -52,7 +52,7 @@ failed `base` left behind, is refused rather than compared with. Only while `--r
 harness - the change that brings it - is there nothing to compare with; a base without one after
 that is an error.
 
-**Only what a change can reach.** A recording also writes, beside the record, which of BAT's modules
+**Only what a change can reach.** A recording also writes, beside the record, which of the app's modules
 each part of it ran (`tests/behaviour/executed.py`): each route as each reader asks it, each scheduled
 task, each rendered file, each scenario step, and `startup`. `check` reads that map from the base and
 records only the parts whose modules the change touches, or that import one it touches - one step out,
@@ -97,7 +97,7 @@ ROOT: Final = pathlib.Path(__file__).resolve().parent.parent.parent
 STATE: Final = ROOT / "state"
 
 HASH_SEED: Final = "0"
-"""What `tests/behaviour` requires of PYTHONHASHSEED: BAT writes some sets as they iterate."""
+"""What `tests/behaviour` requires of PYTHONHASHSEED: the app writes some sets as they iterate."""
 
 META: Final = "behaviour-record.json"
 """Beside a record rather than in it: which commit it was recorded from, which nothing compares."""
@@ -227,7 +227,7 @@ def _dependencies_differ(sha: str) -> bool:
 def _record_with_its_own(sha: str, out: pathlib.Path) -> None:
     """Have `sha` record itself into `out`, with its own script and harness, in a throwaway worktree - and
     its own environment where its dependencies are not this checkout's."""
-    with tempfile.TemporaryDirectory(prefix="bat-behaviour-base-") as scratch:
+    with tempfile.TemporaryDirectory(prefix="devkit-behaviour-base-") as scratch:
         checkout = pathlib.Path(scratch) / "base"
         script = ["scripts/ci/behaviour.py", "record", "--out", str(out.resolve())]
         env = dict(os.environ)
@@ -357,9 +357,9 @@ def _report(
     diff_file.write_text("".join(line + "\n" for line in diff), encoding="utf-8")
     span = f"{recorded.commit[:12]}..{head.commit[:12]}"
     heading = (
-        f"BAT answers as it did, over {span}: {len(head.files)} files, all the same."
+        f"The app answers as it did, over {span}: {len(head.files)} files, all the same."
         if not found.paths
-        else f"BAT answers differently over {span}: {len(found.changed)} changed, "
+        else f"The app answers differently over {span}: {len(found.changed)} changed, "
         f"{len(found.added)} new, {len(found.removed)} no longer recorded, of {len(head.files)}."
     )
     print(heading)
@@ -370,7 +370,7 @@ def _report(
         print(f"\nThe whole diff is in {diff_file}.")
     if not passed:
         print(
-            f"A change meant to alter what BAT answers says so with `{gate.ALLOW}: <path or glob>` in the trailer "
+            f"A change meant to alter what the app answers says so with `{gate.ALLOW}: <path or glob>` in the trailer "
             "block of one of its commits, and the pull request says why. Read the diff before adding one."
         )
     _summarise(heading, lines, diff)
@@ -477,7 +477,7 @@ def check(
         print(heading + "\n" + "\n".join(f"  {reason}" for reason in refused))
         _summarise(heading, refused, [])
         return 1
-    # a full run compares commits already merged, which may hold a harness change and a change to BAT that
+    # a full run compares commits already merged, which may hold a harness change and a change to the app that
     # landed apart: what would refuse one branch is said and compared all the same, less what the gate refuses
     allowances, dropped = _honoured(allowances, list(recorded.files))
     notes = [

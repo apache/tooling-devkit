@@ -106,6 +106,7 @@ mkdir -p "$fake/scripts" "$work/bin"
 for f in container.sh container-size.sh checkout-id.sh checkout-resources.sh seed-volumes.sh; do
     cp "$here/$f" "$fake/scripts/$f"
 done
+cp "$here/../devkit.conf" "$fake/devkit.conf"
 git init --quiet "$fake"
 git -C "$fake" -c user.name=t -c user.email=t@example.org commit --quiet --allow-empty -m start
 
@@ -234,7 +235,7 @@ running() {
 # What run $1 asked the runtime for, before the image name: after it is the command, whose own
 # `PYTEST_WORKERS=` on a make line is not a flag.
 flags_of() {
-    sed -n '/^bat-dev$/q;p' "$work/$1.argv"
+    sed -n '/^devkit-dev$/q;p' "$work/$1.argv"
 }
 
 workers_of() {
@@ -251,7 +252,7 @@ deadline_of() {
 
 # How many lines slot $1 says of who holds it.
 holder_lines() {
-    wc -l < "$fake/.git/bat-gate-slot.$1" | tr -d ' '
+    wc -l < "$fake/.git/devkit-gate-slot.$1" | tr -d ' '
 }
 
 # --- what is not sized -----------------------------------------------------------------------
@@ -260,7 +261,7 @@ slots_of 1 "$m6"
 once plain DEVKIT_SIZE_WORKERS=0
 [ "$(memory_of plain)" = 6g ] || fail "DEVKIT_SIZE_WORKERS=0 keeps the fixed cap"
 [ -z "$(workers_of plain)" ] || fail "and gives make no worker count, so the Makefile's default holds"
-[ ! -e "$fake/.git/bat-gate-slot.0" ] || fail "and takes no slot"
+[ ! -e "$fake/.git/devkit-gate-slot.0" ] || fail "and takes no slot"
 
 once plain_workers DEVKIT_SIZE_WORKERS=0 PYTEST_WORKERS=3
 [ "$(workers_of plain_workers)" = 3 ] || fail "PYTEST_WORKERS reaches make in a run that is not sized"
@@ -269,7 +270,7 @@ once ci CI=true
 [ "$(memory_of ci)" = 6g ] || fail "CI keeps the fixed cap, though the command asked to be sized"
 [ -z "$(workers_of ci)" ] || fail "and the Makefile's worker count"
 [ "$(deadline_of ci)" = 3600 ] || fail "and the hour's deadline"
-[ ! -e "$fake/.git/bat-gate-slot.0" ] || fail "and takes no slot"
+[ ! -e "$fake/.git/devkit-gate-slot.0" ] || fail "and takes no slot"
 
 once detached DEVKIT_DETACH=1
 [ -z "$(workers_of detached)" ] || fail "a container meant to outlive this shell is not sized"
@@ -429,12 +430,12 @@ let_go broken_flock
 # a common git directory nobody can create files in: the same. Root creates files anywhere, so
 # that half is shown only where the test is not root; a probe file that is a directory is shown
 # everywhere.
-rm -f "$fake/.git/bat-gate-probe" "$fake/.git"/bat-gate-slot.*
-mkdir "$fake/.git/bat-gate-probe"
+rm -f "$fake/.git/devkit-gate-probe" "$fake/.git"/devkit-gate-slot.*
+mkdir "$fake/.git/devkit-gate-probe"
 once probe_dir
 grep -q 'sized, but not kept' "$work/probe_dir.out" || fail "a slot directory whose files cannot be opened keeps no slot"
 [ "$(workers_of probe_dir)" = 6 ] || fail "and the run is sized all the same"
-rmdir "$fake/.git/bat-gate-probe"
+rmdir "$fake/.git/devkit-gate-probe"
 if [ "$(id -u)" -ne 0 ]; then
     chmod a-w "$fake/.git"
     once unwritable
@@ -445,6 +446,7 @@ fi
 # a copy that is in no repository has no slots to share, and is sized all the same
 mkdir -p "$work/plain/scripts"
 cp "$fake"/scripts/*.sh "$work/plain/scripts/"
+cp "$fake/devkit.conf" "$work/plain/devkit.conf"
 slots_of 1 "$m6"
 copy="$work/plain"
 once unshared
@@ -459,7 +461,7 @@ slots_of 1 "$m6"
 start holder
 reached holder || fail "a run takes the free slot"
 holder=$(cat "$work/holder.pid")
-grep -q " $holder " "$fake/.git/bat-gate-slot.0" ||
+grep -q " $holder " "$fake/.git/devkit-gate-slot.0" ||
     fail "and writes which checkout and process holds it, for people to read"
 start waiter
 waits waiter || fail "a second run on a machine of one slot waits"
@@ -490,13 +492,13 @@ let_go newcomer
 slots_of 2 "$m6"
 start holder
 reached holder || fail "a run takes slot 0 of two"
-mkdir "$fake/.git/bat-gate-slot.1"
+mkdir "$fake/.git/devkit-gate-slot.1"
 start passed_over
 waits passed_over || fail "a run that cannot open slot 1 waits for slot 0, and does not end"
 let_go holder
 reached passed_over || fail "and takes slot 0 when it is let go"
 let_go passed_over
-rmdir "$fake/.git/bat-gate-slot.1"
+rmdir "$fake/.git/devkit-gate-slot.1"
 slots_of 1 "$m6"
 
 # DEVKIT_MEMORY given, or 0, still waits for a slot: it is a run of the whole suite all the same
@@ -552,6 +554,7 @@ slots_of 1 "$m6"
 git -C "$fake" worktree add --quiet --detach "$work/linked"
 mkdir -p "$work/linked/scripts"
 cp "$fake"/scripts/*.sh "$work/linked/scripts/"
+cp "$fake/devkit.conf" "$work/linked/devkit.conf"
 start holder
 reached holder || fail "a run in the main checkout takes the slot"
 copy="$work/linked"
@@ -604,7 +607,8 @@ let_go after_stopped
 
 # --- which targets are sized ---------------------------------------------------------------
 
-if command -v make >/dev/null 2>&1; then
+# a service has a Makefile to read; the kit has none, so this part runs in a service that copied it
+if command -v make >/dev/null 2>&1 && [ -f "$here/../Makefile" ]; then
     targets=$(make -s -n -C "$here/.." container-verify container-verify-fresh container-test \
         container-test-py314 container-test-coverage container-pytest container-check 2>&1)
     for t in 'make verify' 'make verify-fresh' 'make test$'; do

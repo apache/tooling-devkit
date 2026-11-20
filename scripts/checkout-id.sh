@@ -6,13 +6,28 @@
 # going at once. The container scripts used to name their volumes, containers and
 # networks the same way whichever checkout they ran in, so those sessions shared
 # one virtualenv, one node_modules and one e2e server - and `podman rm -f
-# bat-e2e-server` in one of them killed the suite running in another. Deriving the
+# <service>-e2e-server` in one of them killed the suite running in another. Deriving the
 # names from the checkout makes the isolation the default rather than something
 # each session has to remember to ask for.
 #
 # The primary checkout keeps the plain names. It is one thing, so it cannot
 # collide with itself, and renaming its volumes would throw away the virtualenv
 # and node_modules already provisioned on every machine that has them.
+
+# What devkit.conf gives `$1`, or nothing. Read with sed rather than sourced, so that a file of
+# the repository is never run by a script that runs before anything else has been checked.
+devkit_conf() {
+    sed -n "s/^$1=//p" "$script_dir/../devkit.conf" 2>/dev/null | head -n 1
+}
+
+DEVKIT_SERVICE=$(devkit_conf DEVKIT_SERVICE)
+if [ -z "$DEVKIT_SERVICE" ]; then
+    echo "devkit.conf has no DEVKIT_SERVICE: $script_dir/../devkit.conf" >&2
+    exit 1
+fi
+# Where the container mounts the working tree.
+# shellcheck disable=SC2034
+DEVKIT_RUN_DIR=/run/$DEVKIT_SERVICE
 
 # Prints the suffix to hang on a volume, container or network name: empty in the
 # primary checkout, "-<worktree>" in a linked worktree. A linked worktree's .git

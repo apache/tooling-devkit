@@ -4,7 +4,7 @@
 # Everything in this repository builds and tests inside a container (see
 # AGENTS.md); this is the entry point for doing that from a plain shell, without
 # the VS Code devcontainer. The image is the repository Dockerfile, and the
-# working tree is bind-mounted read-write at /run/bat, so edits are live.
+# working tree is bind-mounted read-write at /run/<service> (devkit.conf), so edits are live.
 #
 # The virtualenv and node_modules live in named volumes rather than the bind
 # mount: they hold platform-specific binaries built for the container's musl
@@ -64,7 +64,7 @@
 # so that neither a person nor an agent has to assemble it; `make container-shell`
 # likewise for a shell. Underneath, for what they do not cover:
 #
-#   DEVKIT_TIMEOUT=0 DEVKIT_CONTAINER_NAME=bat-preview \
+#   DEVKIT_TIMEOUT=0 DEVKIT_CONTAINER_NAME=<service>-preview \
 #       scripts/container.sh sh -c 'uv run python -m app'
 #
 # The name, the cap and the deadline are here because none of them were, and a
@@ -88,13 +88,13 @@ repo_root=$(CDPATH='' cd -- "$script_dir/.." && pwd)
 suffix=$(checkout_suffix "$repo_root")
 git_dir=$(worktree_git_dir "$repo_root")
 
-IMAGE_NAME="${DEVKIT_IMAGE:-bat-dev}"
-VENV_VOLUME="${DEVKIT_VENV_VOLUME:-agenda-venv$suffix}"
-NODE_VOLUME="${DEVKIT_NODE_VOLUME:-agenda-node$suffix}"
+IMAGE_NAME="${DEVKIT_IMAGE:-$DEVKIT_SERVICE-dev}"
+VENV_VOLUME="${DEVKIT_VENV_VOLUME:-$DEVKIT_SERVICE-venv$suffix}"
+NODE_VOLUME="${DEVKIT_NODE_VOLUME:-$DEVKIT_SERVICE-node$suffix}"
 
 # The pid, because two commands can be in flight in one checkout - a suite and the
 # e2e typecheck, say - and a name they shared would be a name one of them stole.
-CONTAINER_NAME="${DEVKIT_CONTAINER_NAME:-bat-run$suffix-$$}"
+CONTAINER_NAME="${DEVKIT_CONTAINER_NAME:-$DEVKIT_SERVICE-run$suffix-$$}"
 # The label does not have to be unique, and is what a sweep can select on.
 CHECKOUT_LABEL="${suffix#-}"
 CHECKOUT_LABEL="${CHECKOUT_LABEL:-primary}"
@@ -181,8 +181,8 @@ if ! "$runtime" image exists "$IMAGE_NAME" 2>/dev/null &&
     "$runtime" build -t "$IMAGE_NAME" "$repo_root"
 fi
 
-seed_volume "$VENV_VOLUME" agenda-venv
-seed_volume "$NODE_VOLUME" agenda-node
+seed_volume "$VENV_VOLUME" "$DEVKIT_SERVICE-venv"
+seed_volume "$NODE_VOLUME" "$DEVKIT_SERVICE-node"
 
 # A run of the whole suite is sized to the machine and takes one of its gate slots, on descriptor 8,
 # which the `podman run` below inherits - and, under podman, conmon and the network helper with it:
@@ -211,7 +211,7 @@ inner='
         # uv re-reads its lockfile on every `uv run`; yarn installs when asked and
         # not otherwise, so this asks. See scripts/ensure-node-modules.sh for what
         # it compares and why an existence check was not enough.
-        sh /run/bat/scripts/ensure-node-modules.sh /run/bat/assets
+        sh scripts/ensure-node-modules.sh assets
 
         if [ -n "${DEVKIT_PYTHON:-}" ]; then
             # a venv of its own, so the pinned one in the volume is left alone
@@ -255,10 +255,10 @@ if [ -n "$git_dir" ]; then
     # .git file points at, and what `make check` needs to see a repository
     set -- -v "$git_dir:$git_dir:z" "$@"
 fi
-set -- -v "$repo_root:/run/bat:z" \
-    -v "$VENV_VOLUME:/run/bat/.venv" \
-    -v "$NODE_VOLUME:/run/bat/assets/node_modules" \
-    -w /run/bat \
+set -- -v "$repo_root:$DEVKIT_RUN_DIR:z" \
+    -v "$VENV_VOLUME:$DEVKIT_RUN_DIR/.venv" \
+    -v "$NODE_VOLUME:$DEVKIT_RUN_DIR/assets/node_modules" \
+    -w "$DEVKIT_RUN_DIR" \
     -e "HOME=/root" \
     -e "DEVKIT_PYTHON=${DEVKIT_PYTHON:-}" \
     -e "DEVKIT_TIMEOUT=$TIMEOUT" \
@@ -293,7 +293,7 @@ fi
 
 set -- "$runtime" run \
     --name "$CONTAINER_NAME" \
-    --label "bat.checkout=$CHECKOUT_LABEL" \
+    --label "devkit.checkout=$CHECKOUT_LABEL" \
     --label "$PATH_LABEL=$repo_root" \
     "$@"
 

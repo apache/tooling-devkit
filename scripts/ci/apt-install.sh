@@ -112,12 +112,12 @@ if from_cache; then
 fi
 
 for file in $sources; do
-    [ -f "$file" ] && sudo cp -- "$file" "$file.bat-original"
+    [ -f "$file" ] && sudo cp -- "$file" "$file.devkit-original"
 done
 
 restore_sources() {
     for file in $sources; do
-        [ -f "$file.bat-original" ] && sudo cp -- "$file.bat-original" "$file"
+        [ -f "$file.devkit-original" ] && sudo cp -- "$file.devkit-original" "$file"
     done
 }
 

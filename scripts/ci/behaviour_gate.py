@@ -21,7 +21,7 @@ The comparison runs the branch's own code, so whatever the branch says about its
 what git says instead. Whether the base has a harness is read from the base commit's tree, not from a
 path the branch's script names. Which commits argue for a change is read from the branch's own line,
 not from a merge's message or a branch merged in. And a branch that changes what the record is made
-with says so in a trailer of its own, and changes nothing of BAT in the same breath: a harness change
+with says so in a trailer of its own, and changes nothing of the app in the same breath: a harness change
 and an app change together would compare a new app, recorded by a new harness, with an old one, and a
 difference could come from either.
 """
@@ -49,12 +49,12 @@ HARNESS_FILES: Final = (
     "scripts/ci/behaviour*.py",
     "scripts/ci/trailers.py",
 )
-"""What the record is made with: a change here changes what is recorded without BAT changing.
+"""What the record is made with: a change here changes what is recorded without the app changing.
 
 Of `tests/data`, the two directories the record reads: the fixture working copy (`DATA_DIR_SOURCE`
 in tests/conftest.py) and the assets it asks for (`STATIC_ASSETS_FIXTURE_DIR`). The rest of it is
 pytest's own - the element JSON and parser snapshots, and the inputs of other tests - and a snapshot
-moves with the BAT change that moves it. A new directory the harness reads is added here;
+moves with the app change that moves it. A new directory the harness reads is added here;
 `tests/test_behaviour_check.py` holds the two above to it."""
 
 HARNESS_MARKS: Final = ("scripts/ci/behaviour.py", "tests/behaviour")
@@ -156,8 +156,8 @@ def refusals(
     app = [path for path in changed if path.startswith("app/")]
     if app:
         reasons.append(
-            f"this branch changes what the record is made with ({named}) and BAT itself ({', '.join(app[:5])}): "
-            "split it - the harness first, recorded against the BAT it has; then the change to BAT, recorded "
+            f"this branch changes what the record is made with ({named}) and the app itself ({', '.join(app[:5])}): "
+            "split it - the harness first, recorded against the app it has; then the change to the app, recorded "
             "by the harness the first one left"
         )
     if not harness:
@@ -168,7 +168,7 @@ def refusals(
 def summary(heading: str, lines: list[str], diff: list[str], limit: int = SUMMARY_BYTES) -> str:
     """The step summary, `limit` bytes at most: the heading, then each line, then the diff, until it is
     full, and where it was cut how much more the artifact holds."""
-    parts = [f"### What BAT answers\n\n{heading}\n\n"]
+    parts = [f"### What the app answers\n\n{heading}\n\n"]
     used = len(parts[0].encode())
     closing = "\n```\n"
     rest = [f"- {line}\n" for line in lines] + (["\n```diff\n"] + [f"{line}\n" for line in diff] if diff else [])

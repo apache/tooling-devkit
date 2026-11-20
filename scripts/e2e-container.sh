@@ -55,13 +55,13 @@ repo_root=$(CDPATH='' cd -- "$script_dir/.." && pwd)
 # branch rather than like someone else's tidying up.
 suffix=$(checkout_suffix "$repo_root")
 
-IMAGE_NAME="${DEVKIT_IMAGE:-bat-dev}"
+IMAGE_NAME="${DEVKIT_IMAGE:-$DEVKIT_SERVICE-dev}"
 PLAYWRIGHT_IMAGE="${DEVKIT_PLAYWRIGHT_IMAGE:-mcr.microsoft.com/playwright:v1.61.1-noble}"
-NETWORK="${DEVKIT_E2E_NETWORK:-bat-e2e-net$suffix}"
-SERVER="${DEVKIT_E2E_SERVER:-bat-e2e-server$suffix}"
-VENV_VOLUME="${DEVKIT_VENV_VOLUME:-agenda-venv$suffix}"
-NODE_VOLUME="${DEVKIT_NODE_VOLUME:-agenda-node$suffix}"
-E2E_NODE_VOLUME="${DEVKIT_E2E_NODE_VOLUME:-agenda-e2e-node$suffix}"
+NETWORK="${DEVKIT_E2E_NETWORK:-$DEVKIT_SERVICE-e2e-net$suffix}"
+SERVER="${DEVKIT_E2E_SERVER:-$DEVKIT_SERVICE-e2e-server$suffix}"
+VENV_VOLUME="${DEVKIT_VENV_VOLUME:-$DEVKIT_SERVICE-venv$suffix}"
+NODE_VOLUME="${DEVKIT_NODE_VOLUME:-$DEVKIT_SERVICE-node$suffix}"
+E2E_NODE_VOLUME="${DEVKIT_E2E_NODE_VOLUME:-$DEVKIT_SERVICE-e2e-node$suffix}"
 PORT=8099
 POOL_READY_PORT=8090
 WORKERS="${DEVKIT_E2E_WORKERS:-1}"
@@ -126,7 +126,7 @@ if ! "$runtime" image exists "$IMAGE_NAME" 2>/dev/null &&
 fi
 
 # labelled only under the name this checkout derives: DEVKIT_E2E_NETWORK can name one that is shared
-if [ "$NETWORK" = "bat-e2e-net$suffix" ] && [ -n "$suffix" ]; then
+if [ "$NETWORK" = "$DEVKIT_SERVICE-e2e-net$suffix" ] && [ -n "$suffix" ]; then
     "$runtime" network create --label "$PATH_LABEL=$repo_root" "$NETWORK" >/dev/null 2>&1 || true
 else
     "$runtime" network create "$NETWORK" >/dev/null 2>&1 || true
@@ -136,9 +136,9 @@ fi
 # it seeds them the same way. Unconditionally, not only on the path that starts a
 # server: a reused one is already running from them, and doing it here keeps the
 # two scripts interchangeable as the first thing run in a new worktree.
-seed_volume "$VENV_VOLUME" agenda-venv
-seed_volume "$NODE_VOLUME" agenda-node
-own_volume "$E2E_NODE_VOLUME" "agenda-e2e-node$suffix"
+seed_volume "$VENV_VOLUME" "$DEVKIT_SERVICE-venv"
+seed_volume "$NODE_VOLUME" "$DEVKIT_SERVICE-node"
+own_volume "$E2E_NODE_VOLUME" "$DEVKIT_SERVICE-e2e-node$suffix"
 
 # DEVKIT_KEEP leaves the container up afterwards; this is the half that makes that worth
 # anything. Starting one costs about seventy seconds - copying the tree in and building
@@ -177,9 +177,10 @@ else
 "$runtime" run -d --name "$SERVER" --network "$NETWORK" \
     --label "$PATH_LABEL=$repo_root" \
     -v "$repo_root:/mnt:ro" \
-    -v "$VENV_VOLUME:/run/bat/.venv" \
-    -v "$NODE_VOLUME:/run/bat/assets/node_modules" \
+    -v "$VENV_VOLUME:$DEVKIT_RUN_DIR/.venv" \
+    -v "$NODE_VOLUME:$DEVKIT_RUN_DIR/assets/node_modules" \
     -e "DEVKIT_E2E_WORKERS=$WORKERS" \
+    -e "DEVKIT_RUN_DIR=$DEVKIT_RUN_DIR" \
     "$IMAGE_NAME" \
     sh -euc '
         PATH="/root/.local/bin:$PATH"
@@ -193,8 +194,8 @@ else
             --exclude=./state \
             --exclude=./state-e2e \
             --exclude=./state-preview \
-            -cf - . | tar -C /run/bat -xf -
-        cd /run/bat
+            -cf - . | tar -C "$DEVKIT_RUN_DIR" -xf -
+        cd "$DEVKIT_RUN_DIR"
 
         # The same call container.sh makes, for the same reason: yarn installs when
         # asked and not otherwise. Without it the build dies on "Couldn'"'"'t find the
@@ -269,6 +270,7 @@ status=0
     -e "DEVKIT_E2E_URL=$base_url" \
     -e "DEVKIT_E2E_HOST=$host" \
     -e "DEVKIT_E2E_WORKERS=$WORKERS" \
+    -e "DEVKIT_RUN_DIR=$DEVKIT_RUN_DIR" \
     "$PLAYWRIGHT_IMAGE" \
     sh -euc 'npm install --no-audit --no-fund >/dev/null 2>&1; exec npx playwright test "$@"' sh "$@" ||
     status=$?

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Finish with a linked worktree: remove it, and everything the container scripts made for it.
 #
-#   scripts/worktree-done.sh ../tooling-agenda-<topic>
+#   scripts/worktree-done.sh ../<repository>-<topic>
 #
 # Removes the worktree, then the containers, network and volumes made for it (its virtualenv,
 # node_modules and Playwright's node_modules). The local branch goes too where everything on

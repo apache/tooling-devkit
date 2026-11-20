@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu
 
-# This script is used by the agenda service in Puppet
+# This script is used by the service in Puppet
 
 # shellcheck source=/dev/null
 source .venv/bin/activate

@@ -285,7 +285,7 @@ printf '\nA comment resolves nothing and a reply is only another comment, so not
 # The owner and name are asked for rather than written in: every other call here goes
 # through `:owner/:repo`, which gh fills in from the checkout, and a graphql query is the
 # one place that templating does not reach. Written in, the script reads a fork's pull
-# request numbers against apache/tooling-agenda - answering about somebody else's #731.
+# request numbers against this repository - answering about somebody else's #731.
 owner=$(gh repo view --json owner --jq '.owner.login') || fail "could not tell which repository this is"
 name=$(gh repo view --json name --jq '.name') || fail "could not tell which repository this is"
 

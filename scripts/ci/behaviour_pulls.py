@@ -75,7 +75,18 @@ OUT: Final = ROOT / "state" / "behaviour-pulls.json"
 MAIN: Final = "main"
 KEYS: Final = (gate.ALLOW, gate.HARNESS)
 
-REPOSITORY: Final = os.environ.get("GITHUB_REPOSITORY", "apache/tooling-agenda")
+
+
+def _conf(key: str) -> str:
+    """What `devkit.conf` gives `key`: read as lines of `KEY=value`, never run."""
+    for line in (ROOT / "devkit.conf").read_text().splitlines():
+        name, _, value = line.partition("=")
+        if name == key:
+            return value
+    raise SystemExit(f"devkit.conf has no {key}")
+
+
+REPOSITORY: Final = os.environ.get("GITHUB_REPOSITORY") or _conf("DEVKIT_REPOSITORY")
 API: Final = os.environ.get("GITHUB_API_URL", "https://api.github.com")
 SERVER: Final = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
 MERGED_AS: Final = re.compile(r"\(#(\d+)\)$")

@@ -33,9 +33,9 @@
 
 set -eu
 
-assets=${1:-/run/bat/assets}
-stamp="$assets/node_modules/.bat-install-stamp"
-lock="$assets/node_modules/.bat-install-lock"
+assets=${1:-$(CDPATH= cd -- "$(dirname -- "$0")/../assets" && pwd)}
+stamp="$assets/node_modules/.devkit-install-stamp"
+lock="$assets/node_modules/.devkit-install-lock"
 
 # The escape hatch for the deadlock this would otherwise be. `yarn install
 # --immutable` refuses a lockfile that disagrees with package.json, and this runs

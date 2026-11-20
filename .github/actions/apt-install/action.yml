@@ -46,7 +46,7 @@ runs:
 
     - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
-        path: ~/.cache/bat-apt
+        path: ~/.cache/devkit-apt
         key: ${{ steps.key.outputs.value }}
 
     - shell: bash
@@ -56,6 +56,6 @@ runs:
         # `$HOME` here rather than in `env:` above, where the value would be the literal
         # string and the cache would be a directory called `~`. The path given to
         # actions/cache is its own to expand, and it does.
-        export DEVKIT_APT_CACHE="$HOME/.cache/bat-apt"
+        export DEVKIT_APT_CACHE="$HOME/.cache/devkit-apt"
         # shellcheck disable=SC2086  # a list of packages, deliberately unquoted
         scripts/ci/apt-install.sh $PACKAGES

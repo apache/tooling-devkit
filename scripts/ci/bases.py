@@ -99,7 +99,7 @@ def _git(*arguments: str) -> str:
 
 
 def cache() -> pathlib.Path:
-    return pathlib.Path(_git("rev-parse", "--path-format=absolute", "--git-common-dir")) / "bat-bases"
+    return pathlib.Path(_git("rev-parse", "--path-format=absolute", "--git-common-dir")) / "devkit-bases"
 
 
 def key(kind: Kind, sha: str) -> str:

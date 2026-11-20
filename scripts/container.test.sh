@@ -77,14 +77,14 @@ capture() {
 fail() {
     echo "FAIL: $1" >&2
     echo "  argv was (to the image name):" >&2
-    sed -n '/^bat-dev$/q;p' "$work/argv" | sed 's/^/    /' >&2
+    sed -n '/^devkit-dev$/q;p' "$work/argv" | sed 's/^/    /' >&2
     failures=$((failures + 1))
 }
 
 # Everything before the image name: what podman acts on. After it is the command, which
 # podman hands over untouched - so a flag that lands there does nothing at all.
 flags() {
-    sed -n '/^bat-dev$/q;p' "$work/argv"
+    sed -n '/^devkit-dev$/q;p' "$work/argv"
 }
 
 has_pair() {
@@ -119,15 +119,15 @@ capture env
 
 # The value and its shape, not just the flag: `--name` with nothing after it is what an
 # empty default produces, and the pid is what keeps two runs in one checkout apart.
-pair_matches "--name" "^bat-run.*-[0-9][0-9]*$" ||
+pair_matches "--name" "^devkit-run.*-[0-9][0-9]*$" ||
     fail "named for the checkout and the process, so concurrent runs do not collide"
-pair_matches "--label" "^bat[.]checkout=..*$" || fail "a label naming the checkout, to sweep on"
+pair_matches "--label" "^devkit[.]checkout=..*$" || fail "a label naming the checkout, to sweep on"
 has_pair "--memory" "6g" || fail "a default memory cap, so an overrun is charged to itself"
 has_pair "--memory-swap" "6g" || fail "no swap to escape the cap into"
 has_flag "-i" || fail "stdin reaches the container, or container-shell has no terminal"
 has_flag "--rm" || fail "a container that stops removes itself"
-has_pair "-w" "/run/bat" || fail "the working directory is the bind mount"
-flags | grep -q ':/run/bat:z$' || fail "the working tree is still mounted"
+has_pair "-w" "/run/devkit" || fail "the working directory is the bind mount"
+flags | grep -q ':/run/devkit:z$' || fail "the working tree is still mounted"
 grep -qxF "DEVKIT_TIMEOUT=3600" "$work/argv" || fail "a default deadline reaches the container"
 [ "$status" -eq 0 ] || fail "a command that succeeds is reported as succeeding"
 
@@ -156,10 +156,10 @@ grep -qxF "DEVKIT_NODE_INSTALL=skip" "$work/argv" ||
 
 # --- a container meant to outlive the shell that started it ---------------------------
 
-capture env DEVKIT_DETACH=1 DEVKIT_CONTAINER_NAME=bat-keep DEVKIT_PORT=8080:8080
+capture env DEVKIT_DETACH=1 DEVKIT_CONTAINER_NAME=devkit-keep DEVKIT_PORT=8080:8080
 has_flag "-d" || fail "DEVKIT_DETACH starts the container detached"
 has_pair "-p" "8080:8080" || fail "DEVKIT_PORT publishes the port"
-has_pair "--name" "bat-keep" || fail "a detached container is one you can name"
+has_pair "--name" "devkit-keep" || fail "a detached container is one you can name"
 has_pair "--memory" "6g" || fail "and is capped like any other - the branches share one argv"
 grep -qxF "DEVKIT_TIMEOUT=" "$work/argv" ||
     fail "a detached container has no deadline - it is started to outlive this shell"
@@ -173,7 +173,7 @@ capture env DEVKIT_DETACH=false
 
 # --- a name that is already taken -----------------------------------------------------
 
-capture env DEVKIT_CONTAINER_NAME=bat-keep INSPECT_STATUS=0
+capture env DEVKIT_CONTAINER_NAME=devkit-keep INSPECT_STATUS=0
 [ "$status" -ne 0 ] || fail "a name another container holds is refused, not run into"
 [ ! -s "$work/rm" ] || fail "and refusing it removes nothing - that container is not ours"
 
@@ -347,6 +347,7 @@ for f in container.sh container-size.sh e2e-container.sh e2e-typecheck.sh checko
     checkout-resources.sh seed-volumes.sh; do
     cp "$here/$f" "$fake/scripts/$f"
 done
+cp "$here/../devkit.conf" "$fake/devkit.conf"
 # Every stand-in says what it was called with and where it ran, so that a call made from
 # the wrong directory, or not made, is something to assert on. STUB_FAIL is `name` for
 # every call of that tool, or `name:first-argument` for one of them.

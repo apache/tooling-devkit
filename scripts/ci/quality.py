@@ -472,7 +472,7 @@ def _measure_worktree(sha: str, names: list[str]) -> dict[str, dict[str, float]]
     repository at once and a branch taken here is one taken from somebody.
     """
 
-    with tempfile.TemporaryDirectory(prefix="bat-quality-base-") as scratch:
+    with tempfile.TemporaryDirectory(prefix="devkit-quality-base-") as scratch:
         checkout = pathlib.Path(scratch) / "tree"
         _git("worktree", "add", "--detach", "--quiet", str(checkout), sha)
         try:

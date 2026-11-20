@@ -36,15 +36,15 @@ cat > "$work/bin/runtime" << 'STUB'
 [ -z "${RUNTIME_FAIL:-}" ] || { echo "cannot connect to the runtime" >&2; exit 125; }
 case "$1" in
     ps)
-        echo bat-run-x
-        echo bat-keep-named
-        case "$*" in *" -a"* | *" --all"*) echo bat-run-stopped ;; esac
+        echo devkit-run-x
+        echo devkit-keep-named
+        case "$*" in *" -a"* | *" --all"*) echo devkit-run-stopped ;; esac
         ;;
     container)
         case "$5" in
-            bat-run-x) echo "$RUNNING" ;;
-            bat-keep-named) echo '<no value>' ;;
-            bat-run-stopped) echo "$STOPPED" ;;
+            devkit-run-x) echo "$RUNNING" ;;
+            devkit-keep-named) echo '<no value>' ;;
+            devkit-run-stopped) echo "$STOPPED" ;;
         esac
         ;;
 esac
@@ -73,11 +73,12 @@ for f in $(git -C "$here/.." ls-files '.gitignore' '*/.gitignore'); do
     git add "$f"
 done
 # tracked, as in this repository: an untracked directory holding only ignored files is itself listed
-mkdir -p app/client/static app/sub assets/.yarn/releases
+mkdir -p app/client/static app/sub assets/.yarn/releases e2e/tests
 : > app/client/static/index.html
 : > app/sub/mod.py
 : > assets/.yarn/releases/yarn.cjs
-git add app/client/static/index.html app/sub/mod.py assets/.yarn/releases/yarn.cjs
+: > e2e/tests/home.spec.ts
+git add app/client/static/index.html app/sub/mod.py assets/.yarn/releases/yarn.cjs e2e/tests/home.spec.ts
 git commit -q -m base
 git push -q origin HEAD:main 2> /dev/null
 git fetch -q origin

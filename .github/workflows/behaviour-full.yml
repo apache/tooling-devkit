@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# What BAT answers, recorded in full and compared with the last full record - the backstop for what a
+# What the app answers, recorded in full and compared with the last full record - the backstop for what a
 # pull request's selection did not run (scripts/ci/behaviour.py).
 #
 # A pull request records only the parts of the record its change can reach, read off which modules each
@@ -29,7 +29,7 @@
 # night cost a cache lookup. And on demand, with a base to compare against - `origin/production` for the
 # commit about to be promoted, which is the same comparison `make container-snapshot-full` runs locally.
 
-name: What BAT answers, in full
+name: What the app answers, in full
 
 on:
   schedule:
@@ -166,7 +166,7 @@ jobs:
 
       # A squash merge joins its branch's messages into one, where git reads none of their trailers: each
       # commit's pull request is asked for its own. A step of its own, so that the token reaches GitHub's
-      # API and git fetch here and not BAT's code in the recording. It fails rather than read nothing.
+      # API and git fetch here and not the app's code in the recording. It fails rather than read nothing.
       - name: Read what the pull requests merged since the base allowed
         id: pulls
         if: steps.run.outputs.value == 'true'
@@ -262,9 +262,9 @@ jobs:
           # a lookup that failed is not a lookup that found nothing, and would open a second issue
           set -o pipefail
           base=$(jq -r .commit state/behaviour-base.behaviour-record.json 2>/dev/null || echo unknown)
-          title="What BAT answers, in full, differs on main"
+          title="What the app answers, in full, differs on main"
           # one issue to look in, which says which step failed: a night that could not ask GitHub, or failed
-          # before or after comparing, says nothing about a difference in what BAT answers
+          # before or after comparing, says nothing about a difference in what the app answers
           span="${base:0:12}..${SHA:0:12}"
           read_step='"Read what the pull requests merged since the base allowed"'
           if [ "$PULLS" = failure ] && [ "$AGAIN" = true ]; then
@@ -277,7 +277,7 @@ jobs:
               # the base record may be this commit's own already: what failed came after the move
               body="The nightly compared main clean at ${SHA:0:12}, then failed to keep the result as the next night's base: $RUN"
           else
-              body="The nightly failed before it compared $span; what BAT answers was not read: $RUN"
+              body="The nightly failed before it compared $span; what the app answers was not read: $RUN"
           fi
           # the search matches a title that merely contains this one, and anybody's: only an issue this workflow
           # opened, under exactly this title, is the one to add to

@@ -22,7 +22,7 @@ edits are part of what it was asked about.
 
 ## The prompt
 
-> You are doing an adversarial pre-PR review in the apache/tooling-agenda repository.
+> You are doing an adversarial pre-PR review in this repository.
 > Read AGENTS.md first. **Change nothing, commit nothing, post nothing to GitHub.**
 > Report findings.
 >

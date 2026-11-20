@@ -130,13 +130,13 @@ jobs:
           path: state/quality-readings.json
           key: quality-python-coverage-${{ github.sha }}
 
-  # What BAT answers - every GET route as each reader, the files it renders, what its scheduled
+  # What the app answers - every GET route as each reader, the files it renders, what its scheduled
   # tasks write - recorded with the commit a pull request would merge into and with the pull
   # request, and compared file by file (scripts/ci/behaviour.py). Nothing is committed. As with the
   # quality ratchet, the base comes from the run on main that produced that commit, through the
   # actions cache, and is recorded here on a miss. A difference fails unless a commit the branch
   # adds carries a `Behaviour-Allow:` trailer naming it. One interpreter rather than the matrix:
-  # the record is of BAT, and both sides are recorded alike.
+  # the record is of the app, and both sides are recorded alike.
   behaviour:
     runs-on: *infra-runner
     timeout-minutes: 30

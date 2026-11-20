@@ -25,7 +25,7 @@
 # per session and skipped when the context is long, and this is not read at all.
 #
 # It stands down inside the dev container, where running uv and yarn is the whole idea.
-# /run/bat is where both the Dockerfile and .devcontainer put the working tree, so its
+# /run/<service> is where both the Dockerfile and .devcontainer put the working tree, so its
 # presence is the same question as "am I already inside". DEVKIT_GUARD_FORCE=1 overrides
 # that, which is how guard-bash.test.sh exercises the guard from inside the container.
 #
@@ -53,7 +53,11 @@ isolated() {
     [ "${DEVKIT_ISOLATED:-}" = 1 ]
 }
 
-if [ "${DEVKIT_GUARD_FORCE:-}" != 1 ] && [ -d /run/bat ]; then
+# The service is read from devkit.conf and never sourced: this runs before anything else has been
+# checked, and a file of the repository is not to be run by the code that guards it. Without one
+# the guard stays on, which is the safe answer to "am I already inside".
+_service=$(sed -n 's/^DEVKIT_SERVICE=//p' "$(dirname -- "$0")/../../devkit.conf" 2>/dev/null | head -n 1)
+if [ "${DEVKIT_GUARD_FORCE:-}" != 1 ] && [ -n "$_service" ] && [ -d "/run/$_service" ]; then
     exit 0
 fi
 

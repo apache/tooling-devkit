@@ -49,7 +49,7 @@ seed_volume() {
     # (Copilot, #601). The waiter does not seed: by the time the lock is gone the
     # volume is there, and if it is not, uv and yarn provision it as they always
     # did for a checkout with nothing to copy.
-    _lock="${TMPDIR:-/tmp}/bat-seed-$_volume.lock"
+    _lock="${TMPDIR:-/tmp}/devkit-seed-$_volume.lock"
     if ! mkdir "$_lock" 2>/dev/null; then
         echo "waiting for another run to finish seeding $_volume..." >&2
         _waited=0
