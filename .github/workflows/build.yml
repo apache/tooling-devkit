@@ -449,7 +449,7 @@ jobs:
         # e2e/supervisor.py and e2e/README.md. Measured against this suite locally,
         # 4 workers cut a run from 14.9 minutes at the default of one to 5.7.
         env:
-          BAT_E2E_WORKERS: '4'
+          DEVKIT_E2E_WORKERS: '4'
         run: npx playwright test
 
       # CONTRIBUTING.md asks for screenshots on a user-facing UI change, and the specs

@@ -56,6 +56,6 @@ runs:
         # `$HOME` here rather than in `env:` above, where the value would be the literal
         # string and the cache would be a directory called `~`. The path given to
         # actions/cache is its own to expand, and it does.
-        export BAT_APT_CACHE="$HOME/.cache/bat-apt"
+        export DEVKIT_APT_CACHE="$HOME/.cache/bat-apt"
         # shellcheck disable=SC2086  # a list of packages, deliberately unquoted
         scripts/ci/apt-install.sh $PACKAGES

@@ -179,7 +179,7 @@ if touches '^e2e/'; then
     say 'e2e/ - the end-to-end harness' \
         'make e2e-typecheck. Running the suite says nothing about the types in it.' \
         '?roles= sticks to the shared roster, so every role can end up looking the same.' \
-        'A reused BAT_KEEP container serves the bundle from when it started - drop it' \
+        'A reused DEVKIT_KEEP container serves the bundle from when it started - drop it' \
         'after any change under app/ or assets/. See e2e/README.md.'
 fi
 

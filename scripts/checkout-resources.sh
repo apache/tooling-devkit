@@ -17,11 +17,11 @@ PATH_LABEL=bat.checkout-path
 # shellcheck disable=SC2034
 KINDS="container network volume"
 
-# The runtime the container scripts use: BAT_RUNTIME, else podman, else docker. Prints nothing
+# The runtime the container scripts use: DEVKIT_RUNTIME, else podman, else docker. Prints nothing
 # and fails where there is none.
 container_runtime() {
-    if [ -n "${BAT_RUNTIME:-}" ]; then
-        printf '%s\n' "$BAT_RUNTIME"
+    if [ -n "${DEVKIT_RUNTIME:-}" ]; then
+        printf '%s\n' "$DEVKIT_RUNTIME"
     elif command -v podman >/dev/null 2>&1; then
         echo podman
     elif command -v docker >/dev/null 2>&1; then
@@ -32,7 +32,7 @@ container_runtime() {
 }
 
 # Create a volume, labelled with this checkout, where it does not exist yet - but only when
-# its name is the one this checkout derives ($2). A name given outright (BAT_VENV_VOLUME and
+# its name is the one this checkout derives ($2). A name given outright (DEVKIT_VENV_VOLUME and
 # the like) can be shared, or be the primary's: labelled with whichever checkout made it
 # first, it would be removed along with that checkout. $runtime, $repo_root and $suffix belong
 # to the sourcing script.

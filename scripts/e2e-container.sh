@@ -21,18 +21,18 @@
 # server rather than a fight over one (see scripts/checkout-id.sh).
 #
 # Environment:
-#   BAT_RUNTIME          container runtime to use (default: podman, else docker)
-#   BAT_KEEP             leave the app container running afterwards, to re-run
+#   DEVKIT_RUNTIME          container runtime to use (default: podman, else docker)
+#   DEVKIT_KEEP             leave the app container running afterwards, to re-run
 #                        quickly
-#   BAT_E2E_SERVER       name the application container outright, rather than
+#   DEVKIT_E2E_SERVER       name the application container outright, rather than
 #                        taking the name derived from this checkout
-#   BAT_E2E_NETWORK      likewise for the network the two containers share
-#   BAT_E2E_NODE_VOLUME  likewise for Playwright's own node_modules volume
-#   BAT_IMAGE            the application image, built from the Dockerfile when absent
-#   BAT_PLAYWRIGHT_IMAGE the image the browser and the suite run in
-#   BAT_VENV_VOLUME      as in scripts/container.sh: the volumes the application
-#   BAT_NODE_VOLUME      container runs from
-#   BAT_E2E_WORKERS      run this many servers side by side, one per Playwright worker
+#   DEVKIT_E2E_NETWORK      likewise for the network the two containers share
+#   DEVKIT_E2E_NODE_VOLUME  likewise for Playwright's own node_modules volume
+#   DEVKIT_IMAGE            the application image, built from the Dockerfile when absent
+#   DEVKIT_PLAYWRIGHT_IMAGE the image the browser and the suite run in
+#   DEVKIT_VENV_VOLUME      as in scripts/container.sh: the volumes the application
+#   DEVKIT_NODE_VOLUME      container runs from
+#   DEVKIT_E2E_WORKERS      run this many servers side by side, one per Playwright worker
 #                        (see e2e/supervisor.py), so different spec files can run at
 #                        the same time instead of one at a time. Unset (or 1) keeps
 #                        today's single server.
@@ -55,22 +55,22 @@ repo_root=$(CDPATH='' cd -- "$script_dir/.." && pwd)
 # branch rather than like someone else's tidying up.
 suffix=$(checkout_suffix "$repo_root")
 
-IMAGE_NAME="${BAT_IMAGE:-bat-dev}"
-PLAYWRIGHT_IMAGE="${BAT_PLAYWRIGHT_IMAGE:-mcr.microsoft.com/playwright:v1.61.1-noble}"
-NETWORK="${BAT_E2E_NETWORK:-bat-e2e-net$suffix}"
-SERVER="${BAT_E2E_SERVER:-bat-e2e-server$suffix}"
-VENV_VOLUME="${BAT_VENV_VOLUME:-agenda-venv$suffix}"
-NODE_VOLUME="${BAT_NODE_VOLUME:-agenda-node$suffix}"
-E2E_NODE_VOLUME="${BAT_E2E_NODE_VOLUME:-agenda-e2e-node$suffix}"
+IMAGE_NAME="${DEVKIT_IMAGE:-bat-dev}"
+PLAYWRIGHT_IMAGE="${DEVKIT_PLAYWRIGHT_IMAGE:-mcr.microsoft.com/playwright:v1.61.1-noble}"
+NETWORK="${DEVKIT_E2E_NETWORK:-bat-e2e-net$suffix}"
+SERVER="${DEVKIT_E2E_SERVER:-bat-e2e-server$suffix}"
+VENV_VOLUME="${DEVKIT_VENV_VOLUME:-agenda-venv$suffix}"
+NODE_VOLUME="${DEVKIT_NODE_VOLUME:-agenda-node$suffix}"
+E2E_NODE_VOLUME="${DEVKIT_E2E_NODE_VOLUME:-agenda-e2e-node$suffix}"
 PORT=8099
 POOL_READY_PORT=8090
-WORKERS="${BAT_E2E_WORKERS:-1}"
+WORKERS="${DEVKIT_E2E_WORKERS:-1}"
 
-# Already inside a disposable environment (BAT_ISOLATED=1): the suite runs on it directly,
+# Already inside a disposable environment (DEVKIT_ISOLATED=1): the suite runs on it directly,
 # as `make e2e-test-host` does, rather than in containers nested inside. The arguments
 # are Playwright's, as they are below, and are not put through make, which would split
 # `-g 'two words'` and run what follows a `;` in one.
-if [ "${BAT_ISOLATED:-}" = 1 ]; then
+if [ "${DEVKIT_ISOLATED:-}" = 1 ]; then
     PATH="$HOME/.local/bin:$PATH"
     export PATH
     cd "$repo_root"
@@ -98,8 +98,8 @@ if [ "${BAT_ISOLATED:-}" = 1 ]; then
     exit "$status"
 fi
 
-if [ -n "${BAT_RUNTIME:-}" ]; then
-    runtime="$BAT_RUNTIME"
+if [ -n "${DEVKIT_RUNTIME:-}" ]; then
+    runtime="$DEVKIT_RUNTIME"
 elif command -v podman >/dev/null 2>&1; then
     runtime=podman
 elif command -v docker >/dev/null 2>&1; then
@@ -113,7 +113,7 @@ fi
 # notices at all now the script ends in an explicit `exit`.
 # shellcheck disable=SC2329
 cleanup() {
-    if [ -z "${BAT_KEEP:-}" ]; then
+    if [ -z "${DEVKIT_KEEP:-}" ]; then
         "$runtime" rm -f "$SERVER" >/dev/null 2>&1 || true
     fi
 }
@@ -125,7 +125,7 @@ if ! "$runtime" image exists "$IMAGE_NAME" 2>/dev/null &&
     "$runtime" build -t "$IMAGE_NAME" "$repo_root"
 fi
 
-# labelled only under the name this checkout derives: BAT_E2E_NETWORK can name one that is shared
+# labelled only under the name this checkout derives: DEVKIT_E2E_NETWORK can name one that is shared
 if [ "$NETWORK" = "bat-e2e-net$suffix" ] && [ -n "$suffix" ]; then
     "$runtime" network create --label "$PATH_LABEL=$repo_root" "$NETWORK" >/dev/null 2>&1 || true
 else
@@ -140,21 +140,21 @@ seed_volume "$VENV_VOLUME" agenda-venv
 seed_volume "$NODE_VOLUME" agenda-node
 own_volume "$E2E_NODE_VOLUME" "agenda-e2e-node$suffix"
 
-# BAT_KEEP leaves the container up afterwards; this is the half that makes that worth
+# DEVKIT_KEEP leaves the container up afterwards; this is the half that makes that worth
 # anything. Starting one costs about seventy seconds - copying the tree in and building
 # the frontend - which is most of the wall clock of a narrow run. The e2e directory is
 # bind-mounted into the Playwright container further down, so an already-running server
 # picks up spec edits with no restart at all; only a change under app/ or assets/ needs
 # a fresh one.
 #
-# The network is checked as well as the running state: BAT_E2E_NETWORK can differ between
+# The network is checked as well as the running state: DEVKIT_E2E_NETWORK can differ between
 # runs, and a server left on the previous one is unreachable from the Playwright container
 # attached to this one - which would show up as a silent five-minute wait rather than as
 # anything to do with reuse.
 reuse=""
 # $name and $_ are Go template variables, so the single quotes are deliberate
 # shellcheck disable=SC2016
-if [ -n "${BAT_KEEP:-}" ] &&
+if [ -n "${DEVKIT_KEEP:-}" ] &&
     "$runtime" inspect "$SERVER" --format '{{.State.Running}}' 2>/dev/null | grep -q true &&
     "$runtime" inspect "$SERVER" \
         --format '{{range $name, $_ := .NetworkSettings.Networks}}{{$name}}{{"\n"}}{{end}}' 2>/dev/null |
@@ -164,7 +164,7 @@ fi
 
 if [ -n "$reuse" ]; then
     echo "reusing the running application container: it serves app/ and assets/ as they" >&2
-    echo "were when it started. Drop BAT_KEEP, or remove $SERVER, after changing either." >&2
+    echo "were when it started. Drop DEVKIT_KEEP, or remove $SERVER, after changing either." >&2
 else
     "$runtime" rm -f "$SERVER" >/dev/null 2>&1 || true
     echo "starting the application container..." >&2
@@ -179,7 +179,7 @@ else
     -v "$repo_root:/mnt:ro" \
     -v "$VENV_VOLUME:/run/bat/.venv" \
     -v "$NODE_VOLUME:/run/bat/assets/node_modules" \
-    -e "BAT_E2E_WORKERS=$WORKERS" \
+    -e "DEVKIT_E2E_WORKERS=$WORKERS" \
     "$IMAGE_NAME" \
     sh -euc '
         PATH="/root/.local/bin:$PATH"
@@ -266,9 +266,9 @@ status=0
     -v "$repo_root/e2e:/e2e:z" \
     -v "$E2E_NODE_VOLUME:/e2e/node_modules" \
     -w /e2e \
-    -e "BAT_E2E_URL=$base_url" \
-    -e "BAT_E2E_HOST=$host" \
-    -e "BAT_E2E_WORKERS=$WORKERS" \
+    -e "DEVKIT_E2E_URL=$base_url" \
+    -e "DEVKIT_E2E_HOST=$host" \
+    -e "DEVKIT_E2E_WORKERS=$WORKERS" \
     "$PLAYWRIGHT_IMAGE" \
     sh -euc 'npm install --no-audit --no-fund >/dev/null 2>&1; exec npx playwright test "$@"' sh "$@" ||
     status=$?

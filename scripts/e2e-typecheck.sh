@@ -20,10 +20,10 @@
 #   scripts/e2e-typecheck.sh
 #
 # Environment:
-#   BAT_RUNTIME             container runtime to use (default: podman, else docker)
-#   BAT_PLAYWRIGHT_IMAGE    the image to run in, which carries the node the compiler runs
+#   DEVKIT_RUNTIME             container runtime to use (default: podman, else docker)
+#   DEVKIT_PLAYWRIGHT_IMAGE    the image to run in, which carries the node the compiler runs
 #                           on - pin it to reproduce a version-specific result
-#   BAT_E2E_NODE_VOLUME     name Playwright's node_modules volume outright, rather than
+#   DEVKIT_E2E_NODE_VOLUME     name Playwright's node_modules volume outright, rather than
 #                           taking the name derived from this checkout
 
 set -eu
@@ -37,11 +37,11 @@ repo_root=$(CDPATH='' cd -- "$script_dir/.." && pwd)
 
 suffix=$(checkout_suffix "$repo_root")
 
-PLAYWRIGHT_IMAGE="${BAT_PLAYWRIGHT_IMAGE:-mcr.microsoft.com/playwright:v1.61.1-noble}"
-NODE_VOLUME="${BAT_E2E_NODE_VOLUME:-agenda-e2e-node$suffix}"
+PLAYWRIGHT_IMAGE="${DEVKIT_PLAYWRIGHT_IMAGE:-mcr.microsoft.com/playwright:v1.61.1-noble}"
+NODE_VOLUME="${DEVKIT_E2E_NODE_VOLUME:-agenda-e2e-node$suffix}"
 
-# Already inside a disposable environment (BAT_ISOLATED=1): no image to run it in.
-if [ "${BAT_ISOLATED:-}" = 1 ]; then
+# Already inside a disposable environment (DEVKIT_ISOLATED=1): no image to run it in.
+if [ "${DEVKIT_ISOLATED:-}" = 1 ]; then
     status=0
     (
         cd "$repo_root/e2e" &&
@@ -56,8 +56,8 @@ if [ "${BAT_ISOLATED:-}" = 1 ]; then
     exit "$status"
 fi
 
-if [ -n "${BAT_RUNTIME:-}" ]; then
-    runtime="$BAT_RUNTIME"
+if [ -n "${DEVKIT_RUNTIME:-}" ]; then
+    runtime="$DEVKIT_RUNTIME"
 elif command -v podman >/dev/null 2>&1; then
     runtime=podman
 elif command -v docker >/dev/null 2>&1; then

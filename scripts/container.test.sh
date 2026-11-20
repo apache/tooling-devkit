@@ -53,12 +53,12 @@ STUB
 chmod +x "$work/podman"
 
 # What container.sh reads from the environment, cleared for every run here: this file is run by
-# `make check` inside a container, whose own BAT_TIMEOUT is that container's deadline - a sized run
+# `make check` inside a container, whose own DEVKIT_TIMEOUT is that container's deadline - a sized run
 # given fewer workers has a longer one - and on a runner where CI is set. A default asserted below is
 # the script's default, not whatever the caller happened to have.
-unset BAT_TIMEOUT BAT_MEMORY BAT_SIZE_WORKERS PYTEST_WORKERS CI BAT_CONTAINER_NAME BAT_DETACH \
-    BAT_PORT BAT_PYTHON BAT_IMAGE BAT_VENV_VOLUME BAT_NODE_VOLUME BAT_NODE_INSTALL BAT_MEMINFO \
-    BAT_NPROC BAT_GATE_POLL
+unset DEVKIT_TIMEOUT DEVKIT_MEMORY DEVKIT_SIZE_WORKERS PYTEST_WORKERS CI DEVKIT_CONTAINER_NAME DEVKIT_DETACH \
+    DEVKIT_PORT DEVKIT_PYTHON DEVKIT_IMAGE DEVKIT_VENV_VOLUME DEVKIT_NODE_VOLUME DEVKIT_NODE_INSTALL DEVKIT_MEMINFO \
+    DEVKIT_NPROC DEVKIT_GATE_POLL
 
 status=0
 capture() {
@@ -68,8 +68,8 @@ capture() {
     ARGV_FILE="$work/argv" \
         RM_FILE="$work/rm" \
         PATH="$work:$PATH" \
-        BAT_RUNTIME=podman \
-        BAT_ISOLATED='' \
+        DEVKIT_RUNTIME=podman \
+        DEVKIT_ISOLATED='' \
         "$@" \
         "$script" true > "$work/out" 2>&1 || status=$?
 }
@@ -128,7 +128,7 @@ has_flag "-i" || fail "stdin reaches the container, or container-shell has no te
 has_flag "--rm" || fail "a container that stops removes itself"
 has_pair "-w" "/run/bat" || fail "the working directory is the bind mount"
 flags | grep -q ':/run/bat:z$' || fail "the working tree is still mounted"
-grep -qxF "BAT_TIMEOUT=3600" "$work/argv" || fail "a default deadline reaches the container"
+grep -qxF "DEVKIT_TIMEOUT=3600" "$work/argv" || fail "a default deadline reaches the container"
 [ "$status" -eq 0 ] || fail "a command that succeeds is reported as succeeding"
 
 # The shape of the inner script, which is as far as a stub can see. The `exit` is the
@@ -140,40 +140,40 @@ grep -A1 'timeout -s TERM -k 30' "$work/argv" | grep -q 'exit' ||
 
 # --- and as a long-lived container needs them ----------------------------------------
 
-capture env BAT_TIMEOUT=0
-grep -qxF "BAT_TIMEOUT=" "$work/argv" || fail "BAT_TIMEOUT=0 removes the deadline rather than setting one"
+capture env DEVKIT_TIMEOUT=0
+grep -qxF "DEVKIT_TIMEOUT=" "$work/argv" || fail "DEVKIT_TIMEOUT=0 removes the deadline rather than setting one"
 
-capture env BAT_MEMORY=0
-lacks_flag "--memory" || fail "BAT_MEMORY=0 leaves the cap off entirely"
+capture env DEVKIT_MEMORY=0
+lacks_flag "--memory" || fail "DEVKIT_MEMORY=0 leaves the cap off entirely"
 
-capture env BAT_TIMEOUT=90 BAT_MEMORY=2g
-grep -qxF "BAT_TIMEOUT=90" "$work/argv" || fail "BAT_TIMEOUT carries through"
-has_pair "--memory" "2g" || fail "BAT_MEMORY carries through"
+capture env DEVKIT_TIMEOUT=90 DEVKIT_MEMORY=2g
+grep -qxF "DEVKIT_TIMEOUT=90" "$work/argv" || fail "DEVKIT_TIMEOUT carries through"
+has_pair "--memory" "2g" || fail "DEVKIT_MEMORY carries through"
 
-capture env BAT_NODE_INSTALL=skip
-grep -qxF "BAT_NODE_INSTALL=skip" "$work/argv" ||
-    fail "BAT_NODE_INSTALL reaches the container, or its documented escape hatch does nothing"
+capture env DEVKIT_NODE_INSTALL=skip
+grep -qxF "DEVKIT_NODE_INSTALL=skip" "$work/argv" ||
+    fail "DEVKIT_NODE_INSTALL reaches the container, or its documented escape hatch does nothing"
 
 # --- a container meant to outlive the shell that started it ---------------------------
 
-capture env BAT_DETACH=1 BAT_CONTAINER_NAME=bat-keep BAT_PORT=8080:8080
-has_flag "-d" || fail "BAT_DETACH starts the container detached"
-has_pair "-p" "8080:8080" || fail "BAT_PORT publishes the port"
+capture env DEVKIT_DETACH=1 DEVKIT_CONTAINER_NAME=bat-keep DEVKIT_PORT=8080:8080
+has_flag "-d" || fail "DEVKIT_DETACH starts the container detached"
+has_pair "-p" "8080:8080" || fail "DEVKIT_PORT publishes the port"
 has_pair "--name" "bat-keep" || fail "a detached container is one you can name"
 has_pair "--memory" "6g" || fail "and is capped like any other - the branches share one argv"
-grep -qxF "BAT_TIMEOUT=" "$work/argv" ||
+grep -qxF "DEVKIT_TIMEOUT=" "$work/argv" ||
     fail "a detached container has no deadline - it is started to outlive this shell"
 lacks_flag "--rm" ||
     fail "a detached container is not removed the moment it stops, or it cannot be inspected"
 
-# Anything but 1 and 0 is refused: `BAT_DETACH=false` read as true would start a container,
+# Anything but 1 and 0 is refused: `DEVKIT_DETACH=false` read as true would start a container,
 # say so, and return 0 with the command's output and status never reaching the caller.
-capture env BAT_DETACH=false
-[ "$status" -ne 0 ] || fail "an unreadable BAT_DETACH is refused rather than taken for true"
+capture env DEVKIT_DETACH=false
+[ "$status" -ne 0 ] || fail "an unreadable DEVKIT_DETACH is refused rather than taken for true"
 
 # --- a name that is already taken -----------------------------------------------------
 
-capture env BAT_CONTAINER_NAME=bat-keep INSPECT_STATUS=0
+capture env DEVKIT_CONTAINER_NAME=bat-keep INSPECT_STATUS=0
 [ "$status" -ne 0 ] || fail "a name another container holds is refused, not run into"
 [ ! -s "$work/rm" ] || fail "and refusing it removes nothing - that container is not ours"
 
@@ -196,7 +196,7 @@ signalled() {
     : > "$work/argv"
     : > "$work/rm"
     ARGV_FILE="$work/argv" RM_FILE="$work/rm" BLOCK_RUN=1 \
-        PATH="$work:$PATH" BAT_RUNTIME=podman BAT_ISOLATED='' \
+        PATH="$work:$PATH" DEVKIT_RUNTIME=podman DEVKIT_ISOLATED='' \
         "$script" true > "$work/out" 2>&1 &
     blocked=$!
 
@@ -236,18 +236,18 @@ grep -q "trap 'cleanup; exit 130' INT" "$script" ||
 
 # --- where the whole environment is disposable ----------------------------------------
 
-# BAT_ISOLATED=1 means no container: the stub runtime is on PATH and must not be asked for
+# DEVKIT_ISOLATED=1 means no container: the stub runtime is on PATH and must not be asked for
 # anything, and the command runs in this checkout with its own exit status. The node check
 # is skipped because it needs yarn, which is not what is under test.
 isolated() {
     : > "$work/argv"
     status=0
-    ARGV_FILE="$work/argv" RM_FILE="$work/rm" PATH="$work:$PATH" BAT_RUNTIME=podman \
-        BAT_ISOLATED=1 BAT_NODE_INSTALL=skip "$@" > "$work/out" 2>&1 || status=$?
+    ARGV_FILE="$work/argv" RM_FILE="$work/rm" PATH="$work:$PATH" DEVKIT_RUNTIME=podman \
+        DEVKIT_ISOLATED=1 DEVKIT_NODE_INSTALL=skip "$@" > "$work/out" 2>&1 || status=$?
 }
 
 isolated "$script" true
-[ "$status" -eq 0 ] || fail "BAT_ISOLATED=1 runs the command"
+[ "$status" -eq 0 ] || fail "DEVKIT_ISOLATED=1 runs the command"
 [ ! -s "$work/argv" ] || fail "and asks the runtime for nothing: a container here would rebuild the image"
 
 # From somewhere else: run from the checkout root, as `make check` does, it would pass
@@ -266,7 +266,7 @@ esac
 
 isolated "$script" sh -c 'exit 7'
 [ "$status" -eq 7 ] || fail "and its exit status is the command's own, under a deadline"
-isolated env BAT_TIMEOUT=0 "$script" sh -c 'exit 7'
+isolated env DEVKIT_TIMEOUT=0 "$script" sh -c 'exit 7'
 [ "$status" -eq 7 ] || fail "and with no deadline"
 
 # A signal sent to the script has to reach the command: `timeout` is a child, and a parent
@@ -276,7 +276,7 @@ isolated env BAT_TIMEOUT=0 "$script" sh -c 'exit 7'
 # another session's process, and a command that never started would read as one that stopped.
 rm -f "$work/pid"
 # shellcheck disable=SC2016  # the inner shell expands these, not this one
-BAT_ISOLATED=1 BAT_NODE_INSTALL=skip BAT_TIMEOUT=60 \
+DEVKIT_ISOLATED=1 DEVKIT_NODE_INSTALL=skip DEVKIT_TIMEOUT=60 \
     "$script" sh -c 'echo $$ > "$1"; exec sleep 31' sh "$work/pid" > /dev/null 2>&1 &
 blocked=$!
 waited=0
@@ -306,7 +306,7 @@ wait "$blocked" 2>/dev/null || status=$?
 # case above cannot tell a script that says 143 from one that passes the status on.
 rm -f "$work/pid"
 # shellcheck disable=SC2016  # the inner shell expands these, not this one
-BAT_ISOLATED=1 BAT_NODE_INSTALL=skip BAT_TIMEOUT=60 \
+DEVKIT_ISOLATED=1 DEVKIT_NODE_INSTALL=skip DEVKIT_TIMEOUT=60 \
     "$script" sh -c 'trap "exit 7" TERM; echo $$ > "$1"; while :; do sleep 0.2; done' sh "$work/pid" \
     > /dev/null 2>&1 &
 blocked=$!
@@ -365,14 +365,14 @@ for tool in npm npx yarn; do
     ln -s stub "$work/stubs/$tool"
 done
 # What the scripts call to match node_modules to the lockfile, in place of the real one,
-# which is skipped by BAT_NODE_INSTALL in every other case here.
+# which is skipped by DEVKIT_NODE_INSTALL in every other case here.
 cp "$work/stubs/stub" "$fake/scripts/ensure-node-modules.sh"
 
 e2e_isolated() {
     : > "$work/stub.log"
     status=0
     STUB_LOG="$work/stub.log" HOME="$work/home" PATH="$work/stubs:$PATH" \
-        BAT_ISOLATED=1 BAT_NODE_INSTALL=skip "$@" > "$work/out" 2>&1 || status=$?
+        DEVKIT_ISOLATED=1 DEVKIT_NODE_INSTALL=skip "$@" > "$work/out" 2>&1 || status=$?
 }
 
 mkdir -p "$fake/state-e2e"
@@ -426,21 +426,21 @@ grep -qxF "ensure-node-modules.sh [$fake/assets] @ $fake" "$work/stub.log" ||
 e2e_isolated env STUB_FAIL=ensure-node-modules.sh "$fake/scripts/container.sh" true
 [ "$status" -ne 0 ] || fail "and does not run the command when it cannot"
 
-isolated env BAT_TIMEOUT=1 "$script" sleep 5
+isolated env DEVKIT_TIMEOUT=1 "$script" sleep 5
 [ "$status" -ne 0 ] || fail "the deadline applies without a container, or a hung command is never stopped"
 
 # What needs a container of its own is refused rather than run as something else: a
 # `container-test-py314` that ran on the default Python would report a different answer.
-isolated env BAT_PYTHON=3.14 "$script" true
-[ "$status" -eq 2 ] || fail "BAT_PYTHON is refused, not ignored"
-isolated env BAT_DETACH=1 "$script" true
-[ "$status" -eq 2 ] || fail "BAT_DETACH is refused, not ignored"
-isolated env BAT_PORT=8080:8080 "$script" true
-[ "$status" -eq 2 ] || fail "BAT_PORT is refused, not ignored"
+isolated env DEVKIT_PYTHON=3.14 "$script" true
+[ "$status" -eq 2 ] || fail "DEVKIT_PYTHON is refused, not ignored"
+isolated env DEVKIT_DETACH=1 "$script" true
+[ "$status" -eq 2 ] || fail "DEVKIT_DETACH is refused, not ignored"
+isolated env DEVKIT_PORT=8080:8080 "$script" true
+[ "$status" -eq 2 ] || fail "DEVKIT_PORT is refused, not ignored"
 
 # Only 1 turns it on: another value is a container, as it was before this existed.
-capture env BAT_ISOLATED=0
-[ -s "$work/argv" ] || fail "BAT_ISOLATED=0 still runs in a container"
+capture env DEVKIT_ISOLATED=0
+[ -s "$work/argv" ] || fail "DEVKIT_ISOLATED=0 still runs in a container"
 
 if [ "$failures" -ne 0 ]; then
     echo "$failures check(s) failed" >&2

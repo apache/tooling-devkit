@@ -58,7 +58,7 @@ install_them() {
 
 # Where a job's cache of these packages lives, when the job passed one (see
 # .github/actions/apt-install). Empty means fetch them, which is what a run outside CI does.
-cache=${BAT_APT_CACHE:-}
+cache=${DEVKIT_APT_CACHE:-}
 
 # Install what is in the cache, if what is in it is the whole of what was asked for.
 #

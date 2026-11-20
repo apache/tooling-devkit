@@ -11,12 +11,12 @@ Run it with `scripts/e2e-container.sh $ARGUMENTS`, in the background, and read
 Three things decide whether the run tells you anything:
 
 - Starting the app container costs about seventy seconds, which dwarfs a narrow run.
-  `BAT_KEEP=1` leaves it up for the next one, taking a three-test run from 108s to 40s.
+  `DEVKIT_KEEP=1` leaves it up for the next one, taking a three-test run from 108s to 40s.
   Use it while iterating on a spec - `e2e/` is bind-mounted, so a spec edit needs no
   restart.
-- A change under `app/` or `assets/` does need one. Drop `BAT_KEEP` after one, or the
+- A change under `app/` or `assets/` does need one. Drop `DEVKIT_KEEP` after one, or the
   suite is testing the build from before the change and its answer means nothing.
-- Run the whole suite without `BAT_KEEP`, and expect eight to fifteen minutes: other
+- Run the whole suite without `DEVKIT_KEEP`, and expect eight to fifteen minutes: other
   sessions are working in this repository at the same time and the machine is shared. A
   timing-sensitive assertion can fail under that load, so re-run a lone failure before
   believing it - and say plainly which it turned out to be.

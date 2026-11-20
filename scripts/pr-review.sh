@@ -195,7 +195,7 @@ fi
 #
 # A suppressed finding lives in the body of the round that raised it and nowhere else: it
 # opens no thread, and it is not among the pull request's review comments. Checked on
-# #731, where the block named `BAT_PLAYWRIGHT_IMAGE` and no inline comment did.
+# #731, where the block named `DEVKIT_PLAYWRIGHT_IMAGE` and no inline comment did.
 #
 # So a round that reports one, followed by a clean round, leaves the finding visible only
 # in a body nobody has any reason to open again. Every round is swept here for that

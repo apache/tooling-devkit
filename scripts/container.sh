@@ -17,7 +17,7 @@
 # Usage:
 #   scripts/container.sh make test
 #   scripts/container.sh sh -c 'uv run pytest tests/api -q'
-#   BAT_PYTHON=3.14 scripts/container.sh make test
+#   DEVKIT_PYTHON=3.14 scripts/container.sh make test
 #
 # A run of the whole suite - `make test`, `test-python`, `verify`, `verify-fresh` or
 # `test-coverage`, or `uv run scripts/ci/verify.py` - is sized to the machine and takes one of its
@@ -25,46 +25,46 @@
 # scripts/container-size.sh. A command wrapped in `sh -c` is not recognised as one.
 #
 # Environment:
-#   BAT_PYTHON        run against this Python version instead of the image
+#   DEVKIT_PYTHON        run against this Python version instead of the image
 #                     default, using a throwaway venv (this is how the CI matrix
 #                     versions are reproduced locally)
-#   BAT_ISOLATED      set to `1` where the whole environment is disposable (an isx
+#   DEVKIT_ISOLATED      set to `1` where the whole environment is disposable (an isx
 #                     box): the command runs in this checkout directly, with no
-#                     container. BAT_TIMEOUT applies; BAT_PYTHON, BAT_DETACH and
-#                     BAT_PORT are refused, since each needs a container of its own
-#   BAT_RUNTIME       container runtime to use (default: podman, else docker)
-#   BAT_VENV_VOLUME   name the virtualenv volume outright, rather than taking the
+#                     container. DEVKIT_TIMEOUT applies; DEVKIT_PYTHON, DEVKIT_DETACH and
+#                     DEVKIT_PORT are refused, since each needs a container of its own
+#   DEVKIT_RUNTIME       container runtime to use (default: podman, else docker)
+#   DEVKIT_VENV_VOLUME   name the virtualenv volume outright, rather than taking the
 #                     one derived from this checkout
-#   BAT_NODE_VOLUME   likewise for the node_modules volume
-#   BAT_NODE_INSTALL  set to `skip` to run without checking that node_modules
+#   DEVKIT_NODE_VOLUME   likewise for the node_modules volume
+#   DEVKIT_NODE_INSTALL  set to `skip` to run without checking that node_modules
 #                     matches the lockfile. The way back in when package.json and
 #                     yarn.lock disagree, since the check refuses that and this
 #                     runs before every command - see ensure-node-modules.sh
-#   BAT_TIMEOUT       seconds before the command inside the container is killed
+#   DEVKIT_TIMEOUT       seconds before the command inside the container is killed
 #                     (default 3600; up to 7200 for a sized run given fewer
 #                     workers than its command can use). `0` removes the deadline
-#   BAT_MEMORY        how much memory the container may have (default 6g, or
+#   DEVKIT_MEMORY        how much memory the container may have (default 6g, or
 #                     what the sizing chooses). `0` removes the cap
-#   BAT_SIZE_WORKERS  the most pytest workers the command can use, set by the
+#   DEVKIT_SIZE_WORKERS  the most pytest workers the command can use, set by the
 #                     Makefile's whole-suite targets: the workers and the memory
 #                     cap are then sized to the machine, and the run holds one of
 #                     its gate slots, which every worktree shares, waiting for
 #                     one where all are held. `0` or unset leaves the fixed
 #                     settings, as does CI. See scripts/container-size.sh
 #   PYTEST_WORKERS    given outright, the worker count a sized run uses
-#   BAT_CONTAINER_NAME  name the container outright, rather than taking the one
+#   DEVKIT_CONTAINER_NAME  name the container outright, rather than taking the one
 #                     derived from this checkout and this process
-#   BAT_DETACH        start the container and return, leaving it running. Implies
+#   DEVKIT_DETACH        start the container and return, leaving it running. Implies
 #                     no deadline - the point of it is to outlive this shell - and
 #                     prints the name to reach it by
-#   BAT_PORT          a port to publish: `8080:8080`
+#   DEVKIT_PORT          a port to publish: `8080:8080`
 #
 # A container you mean to keep - a server to browse, a shell to work in - wants the
 # deadline off and a name of its own. `make container-keep` is that, spelled once
 # so that neither a person nor an agent has to assemble it; `make container-shell`
 # likewise for a shell. Underneath, for what they do not cover:
 #
-#   BAT_TIMEOUT=0 BAT_CONTAINER_NAME=bat-preview \
+#   DEVKIT_TIMEOUT=0 DEVKIT_CONTAINER_NAME=bat-preview \
 #       scripts/container.sh sh -c 'uv run python -m app'
 #
 # The name, the cap and the deadline are here because none of them were, and a
@@ -88,13 +88,13 @@ repo_root=$(CDPATH='' cd -- "$script_dir/.." && pwd)
 suffix=$(checkout_suffix "$repo_root")
 git_dir=$(worktree_git_dir "$repo_root")
 
-IMAGE_NAME="${BAT_IMAGE:-bat-dev}"
-VENV_VOLUME="${BAT_VENV_VOLUME:-agenda-venv$suffix}"
-NODE_VOLUME="${BAT_NODE_VOLUME:-agenda-node$suffix}"
+IMAGE_NAME="${DEVKIT_IMAGE:-bat-dev}"
+VENV_VOLUME="${DEVKIT_VENV_VOLUME:-agenda-venv$suffix}"
+NODE_VOLUME="${DEVKIT_NODE_VOLUME:-agenda-node$suffix}"
 
 # The pid, because two commands can be in flight in one checkout - a suite and the
 # e2e typecheck, say - and a name they shared would be a name one of them stole.
-CONTAINER_NAME="${BAT_CONTAINER_NAME:-bat-run$suffix-$$}"
+CONTAINER_NAME="${DEVKIT_CONTAINER_NAME:-bat-run$suffix-$$}"
 # The label does not have to be unique, and is what a sweep can select on.
 CHECKOUT_LABEL="${suffix#-}"
 CHECKOUT_LABEL="${CHECKOUT_LABEL:-primary}"
@@ -105,19 +105,19 @@ off() {
     case "$1" in 0 | '') return 0 ;; *) return 1 ;; esac
 }
 
-TIMEOUT="${BAT_TIMEOUT:-3600}"
-MEMORY="${BAT_MEMORY:-6g}"
+TIMEOUT="${DEVKIT_TIMEOUT:-3600}"
+MEMORY="${DEVKIT_MEMORY:-6g}"
 off "$TIMEOUT" && TIMEOUT=''
 off "$MEMORY" && MEMORY=''
 
-# Anything but `1` and `0` is refused rather than read as true. `BAT_DETACH=false` taken
+# Anything but `1` and `0` is refused rather than read as true. `DEVKIT_DETACH=false` taken
 # for "detached" would start a container, print that it had started, and return 0 - with
 # the command's output and its status never reaching the caller.
-DETACH="${BAT_DETACH:-}"
+DETACH="${DEVKIT_DETACH:-}"
 case "$DETACH" in
     1) ;;
     0 | '') DETACH='' ;;
-    *) echo "BAT_DETACH: expected 1 or 0, got '$DETACH'" >&2; exit 2 ;;
+    *) echo "DEVKIT_DETACH: expected 1 or 0, got '$DETACH'" >&2; exit 2 ;;
 esac
 
 # A deadline on a container whose whole purpose is to outlive this shell would be a
@@ -131,13 +131,13 @@ if [ "$#" -eq 0 ]; then
     exit 2
 fi
 
-# Already inside a disposable environment (BAT_ISOLATED=1, see AGENTS.md): there is nothing
+# Already inside a disposable environment (DEVKIT_ISOLATED=1, see AGENTS.md): there is nothing
 # left to isolate from, and a container in it would only rebuild the image. The command runs
 # where it stands. What is for a container of its own has no meaning here and is refused,
 # where running it as something else would answer a different question.
-if [ "${BAT_ISOLATED:-}" = 1 ]; then
-    if [ -n "${BAT_PYTHON:-}" ] || [ -n "$DETACH" ] || [ -n "${BAT_PORT:-}" ]; then
-        echo "BAT_PYTHON, BAT_DETACH and BAT_PORT need a container of their own: not with BAT_ISOLATED=1" >&2
+if [ "${DEVKIT_ISOLATED:-}" = 1 ]; then
+    if [ -n "${DEVKIT_PYTHON:-}" ] || [ -n "$DETACH" ] || [ -n "${DEVKIT_PORT:-}" ]; then
+        echo "DEVKIT_PYTHON, DEVKIT_DETACH and DEVKIT_PORT need a container of their own: not with DEVKIT_ISOLATED=1" >&2
         exit 2
     fi
     PATH="$HOME/.local/bin:$PATH"
@@ -162,8 +162,8 @@ if [ "${BAT_ISOLATED:-}" = 1 ]; then
     exit "$status"
 fi
 
-if [ -n "${BAT_RUNTIME:-}" ]; then
-    runtime="$BAT_RUNTIME"
+if [ -n "${DEVKIT_RUNTIME:-}" ]; then
+    runtime="$DEVKIT_RUNTIME"
 elif command -v podman >/dev/null 2>&1; then
     runtime=podman
 elif command -v docker >/dev/null 2>&1; then
@@ -191,7 +191,7 @@ seed_volume "$NODE_VOLUME" agenda-node
 #
 # The command itself says whether it is such a run, where no target said so (gate_suite_workers);
 # and a PYTEST_WORKERS on its make line beats the environment's in there, so it is the count here.
-[ -n "${BAT_SIZE_WORKERS+set}" ] || BAT_SIZE_WORKERS=$(gate_suite_workers "$@")
+[ -n "${DEVKIT_SIZE_WORKERS+set}" ] || DEVKIT_SIZE_WORKERS=$(gate_suite_workers "$@")
 make_workers=$(gate_make_workers "$@")
 [ -z "$make_workers" ] || PYTEST_WORKERS=$make_workers
 WORKERS=${PYTEST_WORKERS:-}
@@ -213,17 +213,17 @@ inner='
         # it compares and why an existence check was not enough.
         sh /run/bat/scripts/ensure-node-modules.sh /run/bat/assets
 
-        if [ -n "${BAT_PYTHON:-}" ]; then
+        if [ -n "${DEVKIT_PYTHON:-}" ]; then
             # a venv of its own, so the pinned one in the volume is left alone
-            UV_PROJECT_ENVIRONMENT="/tmp/venv-${BAT_PYTHON}"
+            UV_PROJECT_ENVIRONMENT="/tmp/venv-${DEVKIT_PYTHON}"
             # UV_PYTHON as well as --python: the later `uv run` must find the venv built here
-            UV_PYTHON="$BAT_PYTHON"
+            UV_PYTHON="$DEVKIT_PYTHON"
             export UV_PROJECT_ENVIRONMENT UV_PYTHON
-            uv python install "$BAT_PYTHON" >&2
-            uv sync --frozen --python "$BAT_PYTHON" >&2
+            uv python install "$DEVKIT_PYTHON" >&2
+            uv sync --frozen --python "$DEVKIT_PYTHON" >&2
         fi
 
-        if [ -n "${BAT_TIMEOUT:-}" ]; then
+        if [ -n "${DEVKIT_TIMEOUT:-}" ]; then
             # SIGTERM first so a command that can stop tidily does, SIGKILL half a
             # minute later for one that will not.
             #
@@ -240,7 +240,7 @@ inner='
             # deadline killed a thirty second sleep at 6s (exit 143); as the last
             # command of the script, a three second deadline let a twenty second sleep
             # run to completion and exit 0.
-            timeout -s TERM -k 30 "$BAT_TIMEOUT" "$@"
+            timeout -s TERM -k 30 "$DEVKIT_TIMEOUT" "$@"
             exit $?
         else
             exec "$@"
@@ -260,9 +260,9 @@ set -- -v "$repo_root:/run/bat:z" \
     -v "$NODE_VOLUME:/run/bat/assets/node_modules" \
     -w /run/bat \
     -e "HOME=/root" \
-    -e "BAT_PYTHON=${BAT_PYTHON:-}" \
-    -e "BAT_TIMEOUT=$TIMEOUT" \
-    -e "BAT_NODE_INSTALL=${BAT_NODE_INSTALL:-}" \
+    -e "DEVKIT_PYTHON=${DEVKIT_PYTHON:-}" \
+    -e "DEVKIT_TIMEOUT=$TIMEOUT" \
+    -e "DEVKIT_NODE_INSTALL=${DEVKIT_NODE_INSTALL:-}" \
     "$@"
 
 # Only when there is a count: an empty one would reach make as a value, and `?=` would keep it,
@@ -279,8 +279,8 @@ if [ -n "$MEMORY" ]; then
     set -- --memory "$MEMORY" --memory-swap "$MEMORY" "$@"
 fi
 
-if [ -n "${BAT_PORT:-}" ]; then
-    set -- -p "$BAT_PORT" "$@"
+if [ -n "${DEVKIT_PORT:-}" ]; then
+    set -- -p "$DEVKIT_PORT" "$@"
 fi
 
 if [ -n "$DETACH" ]; then
@@ -303,7 +303,7 @@ set -- "$runtime" run \
 # destroying what it did not create. `--type container`, because a bare `inspect` matches
 # images and volumes too and would refuse over an image that shares the name. The derived
 # name holds this process's pid and cannot collide, so this asks only about a given one.
-if [ -n "${BAT_CONTAINER_NAME:-}" ] &&
+if [ -n "${DEVKIT_CONTAINER_NAME:-}" ] &&
     "$runtime" inspect --type container "$CONTAINER_NAME" > /dev/null 2>&1; then
     echo "a container named $CONTAINER_NAME is already there" >&2
     echo "  $runtime rm -f $CONTAINER_NAME   removes it" >&2
@@ -312,7 +312,7 @@ fi
 
 if [ -n "$DETACH" ]; then
     "$@" > /dev/null
-    echo "started $CONTAINER_NAME${BAT_PORT:+ on $BAT_PORT}" >&2
+    echo "started $CONTAINER_NAME${DEVKIT_PORT:+ on $DEVKIT_PORT}" >&2
     echo "  logs:  $runtime logs -f $CONTAINER_NAME" >&2
     echo "  shell: $runtime exec -it $CONTAINER_NAME sh" >&2
     echo "  stop:  $runtime rm -f $CONTAINER_NAME" >&2

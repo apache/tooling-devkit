@@ -228,8 +228,8 @@ git remote set-url origin git@github.com:apache/tooling-agenda.git
 
 sweep() {
     PATH="$1" GH_DIR="$work/gh" EXPECT_REPO=apache/tooling-agenda FINISHED="$work/finished" \
-        RUNNING="$work.link/running" STOPPED="$work/stopped" BAT_RUNTIME="${RT-$work/bin/runtime}" \
-        BAT_WORKTREE_DONE="$work/bin/finish" FAIL_ON="${FAIL_ON:-}" RUNTIME_FAIL="${RUNTIME_FAIL:-}" \
+        RUNNING="$work.link/running" STOPPED="$work/stopped" DEVKIT_RUNTIME="${RT-$work/bin/runtime}" \
+        DEVKIT_WORKTREE_DONE="$work/bin/finish" FAIL_ON="${FAIL_ON:-}" RUNTIME_FAIL="${RUNTIME_FAIL:-}" \
         sh "$here/worktree-sweep.sh" ${2:+"$2"} > "$work/out" 2>&1
 }
 says() { grep -qF -- "$1" "$work/out" || fail "$2: no \"$1\" in: $(tr '\n' '|' < "$work/out")"; }
@@ -310,7 +310,7 @@ silent "keep $work/local (not on origin/main, and GitHub" "without gh nothing is
 
 # worktree-done.sh itself refuses what status does not show, and each keeps its work
 for w in parent hidden excluded skipped rebasing; do
-    if BAT_RUNTIME=false sh "$here/worktree-done.sh" "$work/$w" > "$work/out" 2>&1; then
+    if DEVKIT_RUNTIME=false sh "$here/worktree-done.sh" "$work/$w" > "$work/out" 2>&1; then
         fail "worktree-done.sh removed $w: $(tr '\n' '|' < "$work/out")"
     fi
 done

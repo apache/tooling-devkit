@@ -4,7 +4,7 @@
 #
 # Sourced by container.sh, like checkout-id.sh. A run of the whole suite is sized: one whose command
 # is `make test`, `test-python`, `verify`, `verify-fresh` or `test-coverage`, or `uv run
-# scripts/ci/verify.py` (gate_suite_workers), or one given BAT_SIZE_WORKERS, the most workers its
+# scripts/ci/verify.py` (gate_suite_workers), or one given DEVKIT_SIZE_WORKERS, the most workers its
 # command can use - which the Makefile's container-* targets set. Everything here runs on the host,
 # before the container starts, because the memory cap is fixed when it does.
 #
@@ -15,7 +15,7 @@
 #   slots     = (MemTotal - GATE_SPARE_MIB) / memory(GATE_SLOT_WORKERS), and at least 1
 #   workers   = the fewest of  cores / slots (at least 1),
 #                              ((MemTotal - GATE_SPARE_MIB) / slots - GATE_BASE_MIB) / GATE_WORKER_MIB,
-#                              BAT_SIZE_WORKERS
+#                              DEVKIT_SIZE_WORKERS
 #   cap       = memory(workers)
 #
 # One slot on a 15 GiB machine, three on 32 GiB. A run's size comes from MemTotal and the slot
@@ -26,7 +26,7 @@
 # A slot is a lock file, bat-gate-slot.<n>, in the repository's common git directory, which every
 # worktree shares. A run takes the first it can lock with `flock -n`. Where every slot is held it
 # blocks on slot 0, so that the kernel wakes it the moment that slot is let go, and tries the others
-# again every BAT_GATE_POLL seconds; it says which checkouts hold them. Several runs waiting on one
+# again every DEVKIT_GATE_POLL seconds; it says which checkouts hold them. Several runs waiting on one
 # slot are woken in no promised order.
 #
 # The lock is on descriptor 8, which `podman run` inherits - and under podman so do conmon and the
@@ -42,11 +42,11 @@
 # failed `flock -n` on a slot afterwards means that slot is held; and the blocking wait is bounded by
 # `timeout`.
 #
-# PYTEST_WORKERS or BAT_MEMORY given outright replaces what this chooses, and the run still takes a
+# PYTEST_WORKERS or DEVKIT_MEMORY given outright replaces what this chooses, and the run still takes a
 # slot. CI keeps the fixed settings and takes none.
 #
-# Three settings exist for scripts/container-size.test.sh and nothing else: BAT_MEMINFO (a file in
-# place of /proc/meminfo), BAT_NPROC (in place of nproc) and BAT_GATE_POLL (seconds between tries
+# Three settings exist for scripts/container-size.test.sh and nothing else: DEVKIT_MEMINFO (a file in
+# place of /proc/meminfo), DEVKIT_NPROC (in place of nproc) and DEVKIT_GATE_POLL (seconds between tries
 # of the other slots while waiting, 5 by default).
 
 # shellcheck disable=SC2154  # $repo_root, $TIMEOUT and $CHECKOUT_LABEL belong to container.sh
@@ -75,7 +75,7 @@ GATE_SPARE_MIB=1024
 GATE_SLOT_WORKERS=6
 
 # A run given fewer workers than its command can use takes longer: its deadline grows in proportion,
-# to no more than this, unless BAT_TIMEOUT is given.
+# to no more than this, unless DEVKIT_TIMEOUT is given.
 GATE_DEADLINE_MAX=7200
 
 # The least memory podman takes as a cap. Below it a run has none.
@@ -123,7 +123,7 @@ gate_number() {
     echo "${_digits:-0}"
 }
 
-# BAT_MEMORY in MiB: a whole number with b, k, m or g, each also as kb, ki or kib, in either case.
+# DEVKIT_MEMORY in MiB: a whole number with b, k, m or g, each also as kb, ki or kib, in either case.
 # Anything else is refused rather than run with a cap nobody can read here.
 gate_mib_of() {
     _value=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
@@ -132,7 +132,7 @@ gate_mib_of() {
     _mib=''
     # more digits than that is no memory size, and overflows the arithmetic
     if [ -n "$_n" ] && [ "${#_n}" -le 13 ]; then
-        _n=$(gate_number BAT_MEMORY "$_n")
+        _n=$(gate_number DEVKIT_MEMORY "$_n")
         case $_unit in
             '' | b) _mib=$((_n / 1048576)) ;;
             k | kb | ki | kib) _mib=$((_n / 1024)) ;;
@@ -142,19 +142,19 @@ gate_mib_of() {
         esac
     fi
     if [ -z "$_mib" ]; then
-        echo "BAT_MEMORY: expected a whole number with b, k, m or g (6g, 6144m, 6GiB), got '$1':" \
+        echo "DEVKIT_MEMORY: expected a whole number with b, k, m or g (6g, 6144m, 6GiB), got '$1':" \
             "a fraction, a t or a space is refused" >&2
         exit 2
     fi
     if [ "$_mib" -lt 1 ] || [ "$_mib" -gt 1048576 ]; then
-        echo "BAT_MEMORY: '$1' is no memory size for a container: under a MiB, or over a TiB" >&2
+        echo "DEVKIT_MEMORY: '$1' is no memory size for a container: under a MiB, or over a TiB" >&2
         exit 2
     fi
     echo "$_mib"
 }
 
 # The most workers the command $@ can use, where it is a run of the whole suite; nothing where it
-# is not. What the Makefile's container-* targets give as BAT_SIZE_WORKERS, for when the command is
+# is not. What the Makefile's container-* targets give as DEVKIT_SIZE_WORKERS, for when the command is
 # given to container.sh directly.
 gate_suite_workers() {
     case ${1:-} in
@@ -203,29 +203,29 @@ gate_make_workers() {
 gate_wanted() {
     # refused here and not through gate_number: this is called as a condition, where a failing
     # command substitution does not end the script
-    case ${BAT_SIZE_WORKERS:-} in
+    case ${DEVKIT_SIZE_WORKERS:-} in
         '') return 1 ;;
         *[!0-9]*)
-            echo "BAT_SIZE_WORKERS: expected a number of workers, got '$BAT_SIZE_WORKERS'" >&2
+            echo "DEVKIT_SIZE_WORKERS: expected a number of workers, got '$DEVKIT_SIZE_WORKERS'" >&2
             exit 2
             ;;
         *) ;;
     esac
-    [ "$(gate_number BAT_SIZE_WORKERS "$BAT_SIZE_WORKERS")" -ge 1 ] || return 1
+    [ "$(gate_number DEVKIT_SIZE_WORKERS "$DEVKIT_SIZE_WORKERS")" -ge 1 ] || return 1
     # GitHub Actions sets CI=true; a runner has the machine to itself and its settings are pinned
     case ${CI:-} in
         '' | 0 | false) ;;
         *) return 1 ;;
     esac
-    [ -r "${BAT_MEMINFO:-/proc/meminfo}" ]
+    [ -r "${DEVKIT_MEMINFO:-/proc/meminfo}" ]
 }
 
 gate_meminfo() {
-    awk -v key="$1:" '$1 == key { print $2 }' "${BAT_MEMINFO:-/proc/meminfo}"
+    awk -v key="$1:" '$1 == key { print $2 }' "${DEVKIT_MEMINFO:-/proc/meminfo}"
 }
 
 gate_cores() {
-    if [ -n "${BAT_NPROC:-}" ]; then echo "$BAT_NPROC"; else nproc 2>/dev/null || echo 1; fi
+    if [ -n "${DEVKIT_NPROC:-}" ]; then echo "$DEVKIT_NPROC"; else nproc 2>/dev/null || echo 1; fi
 }
 
 # --- The slots --------------------------------------------------------------------------------
@@ -305,9 +305,9 @@ gate_holders() {
 }
 
 # Size this run, and take a slot, waiting for one where all are held. Sets WORKERS, MEMORY and
-# TIMEOUT for container.sh; MEMORY is left as it was where BAT_MEMORY was given.
+# TIMEOUT for container.sh; MEMORY is left as it was where DEVKIT_MEMORY was given.
 gate_size() {
-    _max=$(gate_number BAT_SIZE_WORKERS "$BAT_SIZE_WORKERS")
+    _max=$(gate_number DEVKIT_SIZE_WORKERS "$DEVKIT_SIZE_WORKERS")
     _given_workers=''
     # `auto` is xdist's own word for "you choose", which is what this does
     case ${PYTEST_WORKERS:-auto} in
@@ -317,9 +317,9 @@ gate_size() {
     # serial, to the Makefile, as 1 is
     [ "$_given_workers" != 0 ] || _given_workers=1
     _given_mib=''
-    case ${BAT_MEMORY:-} in
+    case ${DEVKIT_MEMORY:-} in
         '' | 0) ;;
-        *) _given_mib=$(gate_mib_of "$BAT_MEMORY") ;;
+        *) _given_mib=$(gate_mib_of "$DEVKIT_MEMORY") ;;
     esac
 
     _total=$(gate_meminfo MemTotal)
@@ -340,14 +340,14 @@ gate_size() {
         [ -n "$_given_mib" ] || echo "container.sh: one worker needs $(gate_memory 1)m and this machine's" \
             "slot holds ${_per_slot}m: one worker, capped at that" >&2
     fi
-    if [ -z "${BAT_MEMORY:-}" ]; then
+    if [ -z "${DEVKIT_MEMORY:-}" ]; then
         MEMORY="${_cap:-$(gate_memory "$WORKERS")}m"
         if [ -n "$_cap" ] && [ "$_cap" -lt "$GATE_LEAST_CAP_MIB" ]; then
             echo "container.sh: under ${GATE_LEAST_CAP_MIB}m is no cap podman takes: no cap" >&2
             MEMORY=''
         fi
     fi
-    if [ -z "${BAT_TIMEOUT:-}" ] && [ -n "$TIMEOUT" ] && [ "$WORKERS" -lt "$_max" ]; then
+    if [ -z "${DEVKIT_TIMEOUT:-}" ] && [ -n "$TIMEOUT" ] && [ "$WORKERS" -lt "$_max" ]; then
         TIMEOUT=$((TIMEOUT * _max / WORKERS))
         [ "$TIMEOUT" -le "$GATE_DEADLINE_MAX" ] || TIMEOUT=$GATE_DEADLINE_MAX
     fi
@@ -363,7 +363,7 @@ gate_size() {
                 gate_holders "$_slots" "$_dir" >&2
                 _said=$_now
             fi
-            if gate_block "${BAT_GATE_POLL:-5}" "$_dir"; then
+            if gate_block "${DEVKIT_GATE_POLL:-5}" "$_dir"; then
                 break
             fi
         done

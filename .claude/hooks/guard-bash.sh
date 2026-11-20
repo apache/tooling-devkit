@@ -26,16 +26,16 @@
 #
 # It stands down inside the dev container, where running uv and yarn is the whole idea.
 # /run/bat is where both the Dockerfile and .devcontainer put the working tree, so its
-# presence is the same question as "am I already inside". BAT_GUARD_FORCE=1 overrides
+# presence is the same question as "am I already inside". DEVKIT_GUARD_FORCE=1 overrides
 # that, which is how guard-bash.test.sh exercises the guard from inside the container.
 #
 # A disposable environment that is not that container - an isx box, say - says so with
-# BAT_ISOLATED=1, and there only the toolchain rules stand down: a box with a throwaway
+# DEVKIT_ISOLATED=1, and there only the toolchain rules stand down: a box with a throwaway
 # filesystem has nothing to protect from `uv`, and everything else here (staging, the
 # stash, --no-verify, the byline on a posted body) is about the repository and its
 # colleagues, which the box does not change. The variable is read from the environment
 # this hook was started in, which the box sets (an isx template's `env`), and never from the
-# command it is judging: `BAT_ISOLATED=1 uv run x` on a host is `uv` on a host.
+# command it is judging: `DEVKIT_ISOLATED=1 uv run x` on a host is `uv` on a host.
 #
 # It holds a rule against a lapse, not against somebody set on breaking it: it reads the shell
 # as far as the rules need and no further. Known to walk past it, and left so:
@@ -50,10 +50,10 @@
 set -eu
 
 isolated() {
-    [ "${BAT_ISOLATED:-}" = 1 ]
+    [ "${DEVKIT_ISOLATED:-}" = 1 ]
 }
 
-if [ "${BAT_GUARD_FORCE:-}" != 1 ] && [ -d /run/bat ]; then
+if [ "${DEVKIT_GUARD_FORCE:-}" != 1 ] && [ -d /run/bat ]; then
     exit 0
 fi
 
@@ -853,19 +853,19 @@ make_assignment_refusal() {
                 *) : ;;
             esac
             ;;
-        # the container scripts run BAT_RUNTIME as a program, so it names one of the two runtimes
-        BAT_RUNTIME)
+        # the container scripts run DEVKIT_RUNTIME as a program, so it names one of the two runtimes
+        DEVKIT_RUNTIME)
             case $_value in
                 podman | docker) : ;;
-                *) printf '%s' "BAT_RUNTIME is podman or docker, and \`$_value\` is a program run on the host" ;;
+                *) printf '%s' "DEVKIT_RUNTIME is podman or docker, and \`$_value\` is a program run on the host" ;;
             esac
             ;;
-        # the BAT_* names the scripts read, and no others: a pattern let `BAT_X$(...)` and `BAT_X!` through
+        # the DEVKIT_* names the scripts read, and no others: a pattern let `DEVKIT_X$(...)` and `DEVKIT_X!` through
         KEEP_PORT | KEEP_NAME | PYTEST_WORKERS | QUALITY_REF | MINUTES_READING_REF | SNAPSHOT_REF | \
-            CHECK_REF | BAT_CONTAINER_NAME | BAT_DETACH | BAT_E2E_HOST | BAT_E2E_NETWORK | BAT_E2E_NODE_VOLUME | \
-            BAT_E2E_SERVER | BAT_E2E_URL | BAT_E2E_WORKERS | BAT_IMAGE | BAT_KEEP | BAT_MEMORY | \
-            BAT_NODE_INSTALL | BAT_NODE_VOLUME | BAT_PLAYWRIGHT_IMAGE | BAT_PORT | BAT_PYTHON | BAT_SIZE_WORKERS | \
-            BAT_TIMEOUT | BAT_VENV_VOLUME)
+            CHECK_REF | DEVKIT_CONTAINER_NAME | DEVKIT_DETACH | DEVKIT_E2E_HOST | DEVKIT_E2E_NETWORK | DEVKIT_E2E_NODE_VOLUME | \
+            DEVKIT_E2E_SERVER | DEVKIT_E2E_URL | DEVKIT_E2E_WORKERS | DEVKIT_IMAGE | DEVKIT_KEEP | DEVKIT_MEMORY | \
+            DEVKIT_NODE_INSTALL | DEVKIT_NODE_VOLUME | DEVKIT_PLAYWRIGHT_IMAGE | DEVKIT_PORT | DEVKIT_PYTHON | DEVKIT_SIZE_WORKERS | \
+            DEVKIT_TIMEOUT | DEVKIT_VENV_VOLUME)
             case $_value in
                 *[!A-Za-z0-9_./:~^-]*) printf '%s' "$_name is a plain value, and \`$_value\` is more" ;;
                 *) : ;;
@@ -950,23 +950,23 @@ $_make_words
 EOF
 }
 
-# The container wrappers also read BAT_ISOLATED, and the first word of
-# `BAT_ISOLATED=1 scripts/container.sh make test` is the wrapper the container rule asks for.
+# The container wrappers also read DEVKIT_ISOLATED, and the first word of
+# `DEVKIT_ISOLATED=1 scripts/container.sh make test` is the wrapper the container rule asks for.
 # Left alone, that is the toolchain on a host that said nothing of the kind. So where the
 # environment has not set it, a command may not.
 #
 # The ways of setting it are too many to list - `env`, `nice`, `sudo -u`, `bash -lc`, `eval`,
 # a `make` argument, a quoted name - and a list that omits one is a list that is walked past.
-# So the question is turned round: a part that names `BAT_ISOLATED` at all is refused, unless
+# So the question is turned round: a part that names `DEVKIT_ISOLATED` at all is refused, unless
 # what it runs is something that only reads text, where the word is a message or a pattern
-# (`git commit -m`, `gh ... --body`, `grep`). The bare name and not `BAT_ISOLATED=`, because
-# `BAT_ISOLATED+=1`, `read BAT_ISOLATED` and `printf -v BAT_ISOLATED` set it without that text.
-# Quotes and backslashes are taken out first, so `"BAT_ISOLATED=1"` and `BAT_ISOLATED\=1` are
-# the same word as the bare one; `env -u BAT_ISOLATED`, which asks for a container, is let by.
+# (`git commit -m`, `gh ... --body`, `grep`). The bare name and not `DEVKIT_ISOLATED=`, because
+# `DEVKIT_ISOLATED+=1`, `read DEVKIT_ISOLATED` and `printf -v DEVKIT_ISOLATED` set it without that text.
+# Quotes and backslashes are taken out first, so `"DEVKIT_ISOLATED=1"` and `DEVKIT_ISOLATED\=1` are
+# the same word as the bare one; `env -u DEVKIT_ISOLATED`, which asks for a container, is let by.
 # `git` and `gh` can run a shell - an alias, `-c core.pager=...`, `rebase -x`, `bisect run` -
 # so they count as readers for the subcommands that only read or write text, and for no
 # other (see `text_subcommand`). What this cannot see: a script written to a file
-# and run afterwards, a word that a command substitution prints (`env $(echo BAT_ISOLATED=1)`),
+# and run afterwards, a word that a command substitution prints (`env $(echo DEVKIT_ISOLATED=1)`),
 # which the guard reads as one opaque word everywhere - and reading inside one would refuse
 # every commit message that mentions the variable - and a name assembled from pieces.
 #
@@ -1007,7 +1007,7 @@ text_subcommand() {
 # `-O`/`--open-files-in-pager`, in any abbreviation git accepts (`--op`) or cluster (`-nO...`),
 # and a word the shell expands (`$opt`), which could be either. git grep takes its options
 # first and refuses one after a pattern or a path, so the scan stops at the first word that is
-# not an option, and at `--`. A value an option takes is not an option: `-e -BAT_ISOLATED` is
+# not an option, and at `--`. A value an option takes is not an option: `-e -DEVKIT_ISOLATED` is
 # a pattern. A long option this does not know may take the next word as its value, so that word
 # does not end the scan.
 grep_runs_a_shell() {
@@ -1052,17 +1052,17 @@ check_isolated_assignment() {
         return 0
     fi
     # `-u NAME` only as its own words: stripped from the whole part, it ate the end of
-    # `X=-u BAT_ISOLATED=1`, which is two assignments, and left `X==1`.
+    # `X=-u DEVKIT_ISOLATED=1`, which is two assignments, and left `X==1`.
     _flat=$(printf '%s' "$1" | tr -d "'\"\\\\" |
-        sed -E 's/(^|[[:space:]])-u[[:space:]]*BAT_ISOLATED([[:space:]]|$)/\1\2/g')
+        sed -E 's/(^|[[:space:]])-u[[:space:]]*DEVKIT_ISOLATED([[:space:]]|$)/\1\2/g')
     case $_flat in
-        *BAT_ISOLATED*) : ;;
+        *DEVKIT_ISOLATED*) : ;;
         *) return 0 ;;
     esac
     if reads_text "$_flat"; then
         return 0
     fi
-    refuse "BAT_ISOLATED is the environment's to set, and this command sets it." \
+    refuse "DEVKIT_ISOLATED is the environment's to set, and this command sets it." \
         "A disposable environment sets it where the agent is started (for isx, the
 template's env). Without it, use the wrappers as they are:
   make container-check | make container-test | make container-quality
@@ -1083,14 +1083,14 @@ reads_text() {
     _head=${_trimmed%%[[:space:]]*}
     case ${_head##*/} in
         git | gh) text_subcommand "$_trimmed" ;;
-        # not `printf`: `printf -v BAT_ISOLATED 1` assigns it, and `set -a` exports it
+        # not `printf`: `printf -v DEVKIT_ISOLATED 1` assigns it, and `set -a` exports it
         grep | rg | echo | cat | jq | head | tail | ls | wc | diff) return 0 ;;
         *) return 1 ;;
     esac
 }
 
-# allexport exports every variable assigned after it, and then a reader can assign BAT_ISOLATED
-# without naming it the way a setter does - `echo ${BAT_ISOLATED:=1}`, an arithmetic `$[...]`,
+# allexport exports every variable assigned after it, and then a reader can assign DEVKIT_ISOLATED
+# without naming it the way a setter does - `echo ${DEVKIT_ISOLATED:=1}`, an arithmetic `$[...]`,
 # an array subscript - and the wrapper after it reads it from the environment. Every other way
 # of exporting it names it in a part that is not a reader, which check_isolated_assignment
 # refuses. So where the environment has not set it, allexport is refused in every spelling:
@@ -1150,7 +1150,7 @@ exports_all() {
 }
 
 refuse_allexport() {
-    refuse "allexport (\`set -a\`, \`set -o allexport\`, \`bash -a\`) exports whatever is assigned after it, BAT_ISOLATED included, under spellings this guard cannot read as setting it." \
+    refuse "allexport (\`set -a\`, \`set -o allexport\`, \`bash -a\`) exports whatever is assigned after it, DEVKIT_ISOLATED included, under spellings this guard cannot read as setting it." \
         "Export what a command needs by name, or pass it on the command line:
   FOO=1 scripts/container.sh make test
 

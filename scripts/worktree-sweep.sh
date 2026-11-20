@@ -22,7 +22,7 @@
 #     process has its working directory in it;
 #   - its branch was made from main and has had no commit of its own: a topic just claimed is on
 #     origin/main from its first minute;
-#   - it was used in the last BAT_SWEEP_IDLE_HOURS hours (default 6), by its HEAD, index and
+#   - it was used in the last DEVKIT_SWEEP_IDLE_HOURS hours (default 6), by its HEAD, index and
 #     reflog - a session that only reads moves none of them, which the checks above stand in for.
 #
 # When something cannot be asked - the container runtime fails, gh fails - what it would have
@@ -31,7 +31,7 @@
 # Reads origin as this checkout last fetched it: `git fetch` first. Asks GitHub through `gh`;
 # without it, or when it cannot answer, only what is on origin/main is found, and it says so.
 #
-# Environment: BAT_SWEEP_IDLE_HOURS; BAT_RUNTIME as in container.sh; BAT_WORKTREE_DONE, the
+# Environment: DEVKIT_SWEEP_IDLE_HOURS; DEVKIT_RUNTIME as in container.sh; DEVKIT_WORKTREE_DONE, the
 # finisher (tests stand one in).
 
 set -eu
@@ -45,8 +45,8 @@ script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 . "$script_dir/checkout-resources.sh"
 # shellcheck source=scripts/worktree-held.sh
 . "$script_dir/worktree-held.sh"
-finish=${BAT_WORKTREE_DONE:-$script_dir/worktree-done.sh}
-idle_hours=${BAT_SWEEP_IDLE_HOURS:-6}
+finish=${DEVKIT_WORKTREE_DONE:-$script_dir/worktree-done.sh}
+idle_hours=${DEVKIT_SWEEP_IDLE_HOURS:-6}
 
 yes=''
 case "${1:-}" in

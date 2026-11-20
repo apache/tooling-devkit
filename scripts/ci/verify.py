@@ -141,7 +141,7 @@ STAGES = (
 # Settings a run reads from the environment that change what it checks - PYTEST_ADDOPTS among them,
 # since `-k` or `--lf` there runs some of the suite and would otherwise record a pass of all of it.
 # Make's own variables reach the key through `make -n` instead, all but PYTEST_WORKERS (`recipe`).
-_ENVIRONMENT = ("BAT_PROPERTY_EXAMPLES", "MINUTES_CORPUS", "BAT_PYTHON", "PYTEST_ADDOPTS")
+_ENVIRONMENT = ("DEVKIT_PROPERTY_EXAMPLES", "MINUTES_CORPUS", "DEVKIT_PYTHON", "PYTEST_ADDOPTS")
 
 
 def _git(*arguments: str, check: bool = True, stdin: str | None = None) -> str:

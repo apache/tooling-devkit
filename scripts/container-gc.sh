@@ -19,7 +19,7 @@
 #
 # Run it from any checkout of this repository: every worktree of it is asked about.
 #
-# Environment: BAT_RUNTIME as in container.sh.
+# Environment: DEVKIT_RUNTIME as in container.sh.
 
 set -eu
 

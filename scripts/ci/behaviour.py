@@ -158,12 +158,12 @@ def run_harness(out: pathlib.Path, selection: dict[str, list[str]] | None = None
     command = [sys.executable, "-m", "pytest", "-n", _workers(), "-q", "-p", "no:cacheprovider", "tests/behaviour"]
     env = os.environ | {
         "PYTHONHASHSEED": HASH_SEED,
-        "BAT_BEHAVIOUR_OUT": str(out),
-        "BAT_BEHAVIOUR_EXECUTED": str(_beside(out, "executed")),
+        "DEVKIT_BEHAVIOUR_OUT": str(out),
+        "DEVKIT_BEHAVIOUR_EXECUTED": str(_beside(out, "executed")),
     }
     if selection is not None:
         _beside(out, "select.json").write_text(json.dumps(selection) + "\n")
-        env |= {"BAT_BEHAVIOUR_SELECT": str(_beside(out, "select.json"))}
+        env |= {"DEVKIT_BEHAVIOUR_SELECT": str(_beside(out, "select.json"))}
     finished = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True)
     if finished.returncode != 0:
         raise SystemExit(f"recording failed ({finished.returncode}):\n{finished.stdout[-6000:]}")

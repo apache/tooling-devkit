@@ -14,7 +14,7 @@
 # HEAD holding commits nothing else does. Git removes the worktree before anything else
 # goes, and itself refuses one that is not clean.
 #
-# Environment: BAT_RUNTIME as in container.sh.
+# Environment: DEVKIT_RUNTIME as in container.sh.
 
 set -eu
 

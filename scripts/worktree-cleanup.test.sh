@@ -120,7 +120,7 @@ setup() {
 run() {
     : > "$work/removed"
     status=0
-    PATH="$work/bin:$PATH" BAT_RUNTIME=podman STUB_DIR="$work/stub" REMOVED="$work/removed" \
+    PATH="$work/bin:$PATH" DEVKIT_RUNTIME=podman STUB_DIR="$work/stub" REMOVED="$work/removed" \
         CREATED="$work/created" "$@" > "$work/out" 2>&1 || status=$?
 }
 

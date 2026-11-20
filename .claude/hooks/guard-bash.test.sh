@@ -7,7 +7,7 @@
 #
 # Run by prek (see .pre-commit-config.yaml), and so by `make check`, which means it runs
 # inside the dev container - where the guard would otherwise stand itself down. Hence
-# BAT_GUARD_FORCE.
+# DEVKIT_GUARD_FORCE.
 
 # shellcheck disable=SC2016  # every case is a command line, handed to the guard as its literal text
 
@@ -16,14 +16,14 @@ set -eu
 here=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 guard="$here/guard-bash.sh"
 
-BAT_GUARD_FORCE=1
-export BAT_GUARD_FORCE
+DEVKIT_GUARD_FORCE=1
+export DEVKIT_GUARD_FORCE
 
 # Every case below is a host unless it says otherwise, and this runs inside isx boxes whose
-# own environment has BAT_ISOLATED=1 - so it is taken out of what the guard inherits, and
+# own environment has DEVKIT_ISOLATED=1 - so it is taken out of what the guard inherits, and
 # put back for one case at a time by in_isolated.
-BAT_ISOLATED=
-export BAT_ISOLATED
+DEVKIT_ISOLATED=
+export DEVKIT_ISOLATED
 
 failures=0
 
@@ -105,7 +105,7 @@ allow 'timeout 600 scripts/container.sh make test'
 # The toolchain, in the container, which is the whole point of the rule
 allow 'scripts/container.sh make test'
 allow "scripts/container.sh sh -c 'uv run pytest tests/api -q'"
-allow 'BAT_PYTHON=3.14 scripts/container.sh make test'
+allow 'DEVKIT_PYTHON=3.14 scripts/container.sh make test'
 allow 'scripts/e2e-container.sh presentation'
 # The form AGENTS.md asks for, and the one the guard's own refusal message suggests: the
 # separator belongs to the string the shell is handed, not to the line the guard is reading.
@@ -182,18 +182,18 @@ allow "make container-test ARGS='-q | tee out'"
 allow "make container-keep KEEP_PORT=127.0.0.1:18080:8080"
 allow "make container-keep KEEP_CMD='sh -c \"cd assets && yarn dev\"'"
 allow 'make container-keep KEEP_CMD=scripts/run-preview.sh'
-allow 'BAT_KEEP=1 make e2e-quick FILTER=presentation'
-# BAT_RUNTIME is run as a program, and only the BAT_* names the scripts read are values at all
-refuse 'make container-check BAT_RUNTIME=/tmp/planted'
-refuse 'BAT_RUNTIME=./x make container-check'
-refuse "make container-check 'BAT_X\$(touch f)=1'"
-refuse 'make container-check BAT_X!=id'
-refuse 'make container-check BAT_KEEP:=1'
-allow 'make container-test BAT_RUNTIME=docker'
-allow 'BAT_MEMORY=0 make container-verify'
+allow 'DEVKIT_KEEP=1 make e2e-quick FILTER=presentation'
+# DEVKIT_RUNTIME is run as a program, and only the DEVKIT_* names the scripts read are values at all
+refuse 'make container-check DEVKIT_RUNTIME=/tmp/planted'
+refuse 'DEVKIT_RUNTIME=./x make container-check'
+refuse "make container-check 'DEVKIT_X\$(touch f)=1'"
+refuse 'make container-check DEVKIT_X!=id'
+refuse 'make container-check DEVKIT_KEEP:=1'
+allow 'make container-test DEVKIT_RUNTIME=docker'
+allow 'DEVKIT_MEMORY=0 make container-verify'
 # the sizing's off switch, on the make line where the Makefile reads it
-allow 'make container-verify BAT_SIZE_WORKERS=0'
-refuse 'make container-verify BAT_SIZE_WORKERS=$(id)'
+allow 'make container-verify DEVKIT_SIZE_WORKERS=0'
+refuse 'make container-verify DEVKIT_SIZE_WORKERS=$(id)'
 # the target itself, which check_part matched as `container-*`
 refuse "make container-check=1"
 refuse "make container-x!='touch f'"
@@ -242,7 +242,7 @@ allow 'make e2e-test'
 # and the only thing that type-checks e2e/ at all
 allow 'make e2e-typecheck'
 allow 'scripts/e2e-typecheck.sh'
-allow 'BAT_KEEP=1 scripts/e2e-container.sh agenda'
+allow 'DEVKIT_KEEP=1 scripts/e2e-container.sh agenda'
 # the same check run on the host is still the host, whichever way it is spelt
 refuse 'npx tsc --noEmit -p e2e/tsconfig.json'
 refuse 'npm run typecheck'
@@ -252,7 +252,7 @@ refuse 'npm run typecheck'
 refuse 'make e2e-test | tail -25'
 refuse 'scripts/e2e-container.sh 2>&1 | tail -40'
 refuse 'make container-check 2>&1 | grep -viE "Passed|Skipped" | tail -8'
-refuse 'BAT_KEEP=1 scripts/e2e-container.sh chrome-density | head -30'
+refuse 'DEVKIT_KEEP=1 scripts/e2e-container.sh chrome-density | head -30'
 refuse 'make container-test | tail -12'
 refuse 'scripts/container.sh make check | tail -5'
 # ...but only for the wrappers, and only where the status is what was thrown away
@@ -894,12 +894,12 @@ MD
 CASE
 )"
 
-# A disposable environment (BAT_ISOLATED=1, set by the box and not by the command): the
+# A disposable environment (DEVKIT_ISOLATED=1, set by the box and not by the command): the
 # toolchain stands down, and nothing about the repository does.
 in_isolated() {
-    BAT_ISOLATED=1
+    DEVKIT_ISOLATED=1
     "$@"
-    BAT_ISOLATED=
+    DEVKIT_ISOLATED=
 }
 
 in_isolated allow 'uv run pytest tests/api -q'
@@ -918,77 +918,77 @@ in_isolated refuse 'make container-check | tail -20'
 # command that is still `uv` on a host - and `=0` is not a way of saying yes.
 # ...including through the wrappers, whose first word is the one the container rule asks for
 # and which read the variable themselves.
-refuse 'BAT_ISOLATED=1 scripts/container.sh make test'
-refuse 'BAT_ISOLATED=1 make container-test'
-refuse 'env -i BAT_ISOLATED=1 scripts/container.sh make test'
-refuse 'sudo BAT_ISOLATED=1 scripts/container.sh make test'
-refuse 'timeout 600 env BAT_ISOLATED=1 scripts/container.sh make test'
-refuse '(BAT_ISOLATED=1 scripts/container.sh make test)'
-refuse 'export BAT_ISOLATED=1; scripts/container.sh make test'
-refuse 'FOO=1 BAT_ISOLATED=1 scripts/container.sh make test'
-refuse "sh -c 'BAT_ISOLATED=1 scripts/container.sh make test'"
+refuse 'DEVKIT_ISOLATED=1 scripts/container.sh make test'
+refuse 'DEVKIT_ISOLATED=1 make container-test'
+refuse 'env -i DEVKIT_ISOLATED=1 scripts/container.sh make test'
+refuse 'sudo DEVKIT_ISOLATED=1 scripts/container.sh make test'
+refuse 'timeout 600 env DEVKIT_ISOLATED=1 scripts/container.sh make test'
+refuse '(DEVKIT_ISOLATED=1 scripts/container.sh make test)'
+refuse 'export DEVKIT_ISOLATED=1; scripts/container.sh make test'
+refuse 'FOO=1 DEVKIT_ISOLATED=1 scripts/container.sh make test'
+refuse "sh -c 'DEVKIT_ISOLATED=1 scripts/container.sh make test'"
 # The spellings a list of wrappers omits, which is why the rule reads the whole part: a
 # `make` argument is exported to the recipe, a quoted name is the same name, and an option
 # that takes a value, or a wrapper nobody listed, stands between the word and the command.
-refuse 'make container-test BAT_ISOLATED=1'
-refuse 'make container-pytest ARGS=x BAT_ISOLATED=1'
-refuse 'env "BAT_ISOLATED=1" scripts/container.sh make test'
-refuse "env 'BAT_ISOLATED=1' scripts/container.sh make test"
-refuse 'env -u FOO BAT_ISOLATED=1 scripts/container.sh make test'
-refuse 'nice -n 5 env BAT_ISOLATED=1 scripts/container.sh make test'
-refuse 'stdbuf -o0 env BAT_ISOLATED=1 scripts/container.sh make test'
-refuse 'bash -lc "BAT_ISOLATED=1 scripts/container.sh make test"'
-refuse 'eval "BAT_ISOLATED=1 scripts/container.sh make test"'
-refuse 'if true; then BAT_ISOLATED=1 scripts/container.sh make test; fi'
-refuse '! BAT_ISOLATED=1 scripts/container.sh make test'
+refuse 'make container-test DEVKIT_ISOLATED=1'
+refuse 'make container-pytest ARGS=x DEVKIT_ISOLATED=1'
+refuse 'env "DEVKIT_ISOLATED=1" scripts/container.sh make test'
+refuse "env 'DEVKIT_ISOLATED=1' scripts/container.sh make test"
+refuse 'env -u FOO DEVKIT_ISOLATED=1 scripts/container.sh make test'
+refuse 'nice -n 5 env DEVKIT_ISOLATED=1 scripts/container.sh make test'
+refuse 'stdbuf -o0 env DEVKIT_ISOLATED=1 scripts/container.sh make test'
+refuse 'bash -lc "DEVKIT_ISOLATED=1 scripts/container.sh make test"'
+refuse 'eval "DEVKIT_ISOLATED=1 scripts/container.sh make test"'
+refuse 'if true; then DEVKIT_ISOLATED=1 scripts/container.sh make test; fi'
+refuse '! DEVKIT_ISOLATED=1 scripts/container.sh make test'
 # The name without `=`, a backslash in it, a name split by quotes, and an assignment that
-# is not spelled `=`: each sets the variable, and none contains `BAT_ISOLATED=`.
-refuse 'env BAT_ISOLATED\=1 scripts/container.sh make test'
-refuse 'make container-test BAT_ISOLATED\=1'
-refuse 'BAT_ISOLATED+=1 make container-test'
-refuse 'read -r BAT_ISOLATED <<< 1; export BAT_ISOLATED; scripts/container.sh make test'
-refuse 'printf -v BAT_ISOLATED 1; export BAT_ISOLATED; make container-test'
+# is not spelled `=`: each sets the variable, and none contains `DEVKIT_ISOLATED=`.
+refuse 'env DEVKIT_ISOLATED\=1 scripts/container.sh make test'
+refuse 'make container-test DEVKIT_ISOLATED\=1'
+refuse 'DEVKIT_ISOLATED+=1 make container-test'
+refuse 'read -r DEVKIT_ISOLATED <<< 1; export DEVKIT_ISOLATED; scripts/container.sh make test'
+refuse 'printf -v DEVKIT_ISOLATED 1; export DEVKIT_ISOLATED; make container-test'
 # Without the export the printf is the part refused: `set -a` exports what it assigns.
-refuse 'printf -v BAT_ISOLATED 1; make container-test'
-refuse 'set -a; printf -v BAT_ISOLATED 1; scripts/container.sh make test'
-refuse 'env BAT_ISO"LATED"=1 scripts/container.sh make test'
-refuse 'env BAT_ISOLATED"="1 scripts/container.sh make test'
+refuse 'printf -v DEVKIT_ISOLATED 1; make container-test'
+refuse 'set -a; printf -v DEVKIT_ISOLATED 1; scripts/container.sh make test'
+refuse 'env DEVKIT_ISO"LATED"=1 scripts/container.sh make test'
+refuse 'env DEVKIT_ISOLATED"="1 scripts/container.sh make test'
 # The backslash is taken out before the name is looked for: nothing else in this case has it.
-refuse 'env BAT_ISO\LATED=1 scripts/container.sh make test'
+refuse 'env DEVKIT_ISO\LATED=1 scripts/container.sh make test'
 # git and gh can run a shell, and are readers only for the subcommands that do not.
-refuse 'git -c "alias.x=!BAT_ISOLATED=1 scripts/container.sh make test" x'
-refuse 'git -c core.pager="BAT_ISOLATED=1 scripts/container.sh make test" log'
-refuse 'git --config-env=core.pager=BAT_ISOLATED log'
-refuse "git rebase -x 'BAT_ISOLATED=1 scripts/container.sh make test' HEAD~1"
-refuse "git rebase --exec 'BAT_ISOLATED=1 scripts/container.sh make test' HEAD~1"
-refuse 'git bisect run env BAT_ISOLATED=1 scripts/container.sh make test'
-refuse "git submodule foreach 'BAT_ISOLATED=1 scripts/container.sh make test'"
-refuse "git filter-branch --tree-filter 'BAT_ISOLATED=1 scripts/container.sh make test' HEAD"
-refuse "git difftool -x 'BAT_ISOLATED=1 scripts/container.sh make test'"
-refuse 'git config core.pager BAT_ISOLATED=1'
-refuse 'gh alias set x "!BAT_ISOLATED=1 scripts/container.sh make test"'
-refuse "sed -n '1e BAT_ISOLATED=1 scripts/container.sh make test' f"
+refuse 'git -c "alias.x=!DEVKIT_ISOLATED=1 scripts/container.sh make test" x'
+refuse 'git -c core.pager="DEVKIT_ISOLATED=1 scripts/container.sh make test" log'
+refuse 'git --config-env=core.pager=DEVKIT_ISOLATED log'
+refuse "git rebase -x 'DEVKIT_ISOLATED=1 scripts/container.sh make test' HEAD~1"
+refuse "git rebase --exec 'DEVKIT_ISOLATED=1 scripts/container.sh make test' HEAD~1"
+refuse 'git bisect run env DEVKIT_ISOLATED=1 scripts/container.sh make test'
+refuse "git submodule foreach 'DEVKIT_ISOLATED=1 scripts/container.sh make test'"
+refuse "git filter-branch --tree-filter 'DEVKIT_ISOLATED=1 scripts/container.sh make test' HEAD"
+refuse "git difftool -x 'DEVKIT_ISOLATED=1 scripts/container.sh make test'"
+refuse 'git config core.pager DEVKIT_ISOLATED=1'
+refuse 'gh alias set x "!DEVKIT_ISOLATED=1 scripts/container.sh make test"'
+refuse "sed -n '1e DEVKIT_ISOLATED=1 scripts/container.sh make test' f"
 # git grep only reads, except that `-O` runs its value through a shell.
-refuse "git grep -O'BAT_ISOLATED=1 scripts/container.sh make test;:' -e x"
-refuse "git grep --open-files-in-pager='BAT_ISOLATED=1 scripts/container.sh make test;:' -e x"
-refuse "git grep --op='BAT_ISOLATED=1 scripts/container.sh make test;:' -e x"
-refuse "git grep -nO'BAT_ISOLATED=1 scripts/container.sh make test;:' -e x"
-allow 'git grep -n BAT_ISOLATED'
-allow 'git -C ../other grep -e BAT_ISOLATED -- AGENTS.md'
+refuse "git grep -O'DEVKIT_ISOLATED=1 scripts/container.sh make test;:' -e x"
+refuse "git grep --open-files-in-pager='DEVKIT_ISOLATED=1 scripts/container.sh make test;:' -e x"
+refuse "git grep --op='DEVKIT_ISOLATED=1 scripts/container.sh make test;:' -e x"
+refuse "git grep -nO'DEVKIT_ISOLATED=1 scripts/container.sh make test;:' -e x"
+allow 'git grep -n DEVKIT_ISOLATED'
+allow 'git -C ../other grep -e DEVKIT_ISOLATED -- AGENTS.md'
 # A word the shell expands could be `-O...`; a value an option takes, and anything after the first
 # word that is not an option, is not an option at all - git grep refuses an option there.
-refuse 'git grep $opt -e x BAT_ISOLATED'
-refuse "git grep -e x -O'BAT_ISOLATED=1 scripts/container.sh make test;:'"
-refuse "git grep --max-d 3 -O'BAT_ISOLATED=1 scripts/container.sh make test;:' -e x"
-allow 'git grep -e -BAT_ISOLATED'
-allow 'git grep --regexp -BAT_ISOLATED'
-allow 'git grep -n BAT_ISOLATED -- -O.txt'
-allow 'git grep -n BAT_ISOLATED -O.txt'
-allow 'git grep -A 3 -e BAT_ISOLATED'
+refuse 'git grep $opt -e x DEVKIT_ISOLATED'
+refuse "git grep -e x -O'DEVKIT_ISOLATED=1 scripts/container.sh make test;:'"
+refuse "git grep --max-d 3 -O'DEVKIT_ISOLATED=1 scripts/container.sh make test;:' -e x"
+allow 'git grep -e -DEVKIT_ISOLATED'
+allow 'git grep --regexp -DEVKIT_ISOLATED'
+allow 'git grep -n DEVKIT_ISOLATED -- -O.txt'
+allow 'git grep -n DEVKIT_ISOLATED -O.txt'
+allow 'git grep -A 3 -e DEVKIT_ISOLATED'
 # allexport: after it, a reader can assign the variable and the wrapper read it from the
 # environment. Every spelling is refused; switching it off, and options that leave it off, are not.
-refuse 'set -a; echo ${BAT_ISOLATED:=1}; scripts/container.sh make test'
-refuse 'set -a; echo $[BAT_ISOLATED=1]; scripts/container.sh make test'
+refuse 'set -a; echo ${DEVKIT_ISOLATED:=1}; scripts/container.sh make test'
+refuse 'set -a; echo $[DEVKIT_ISOLATED=1]; scripts/container.sh make test'
 refuse 'set -a'
 refuse 'set -ae; make container-test'
 refuse 'set -euao pipefail; make container-test'
@@ -1005,35 +1005,35 @@ allow 'grep -rn allexport scripts'
 allow 'git commit -m "refuse set -a"'
 in_isolated allow 'set -a; make test'
 # Unsetting it asks for a container, which is the safe direction - but only as its own words:
-# `X=-u BAT_ISOLATED=1` is two assignments, and read as an unset it was let through.
-allow 'env -u BAT_ISOLATED scripts/container.sh make test'
-allow 'env -uBAT_ISOLATED scripts/container.sh make test'
-allow 'env -u FOO -u BAT_ISOLATED scripts/container.sh make test'
-refuse 'env -u BAT_ISOLATED BAT_ISOLATED=1 scripts/container.sh make test'
-refuse 'X=-u BAT_ISOLATED=1 scripts/container.sh make test'
-refuse 'env X=-u BAT_ISOLATED=1 scripts/container.sh make test'
-refuse 'make container-test X=-u BAT_ISOLATED=1'
+# `X=-u DEVKIT_ISOLATED=1` is two assignments, and read as an unset it was let through.
+allow 'env -u DEVKIT_ISOLATED scripts/container.sh make test'
+allow 'env -uDEVKIT_ISOLATED scripts/container.sh make test'
+allow 'env -u FOO -u DEVKIT_ISOLATED scripts/container.sh make test'
+refuse 'env -u DEVKIT_ISOLATED DEVKIT_ISOLATED=1 scripts/container.sh make test'
+refuse 'X=-u DEVKIT_ISOLATED=1 scripts/container.sh make test'
+refuse 'env X=-u DEVKIT_ISOLATED=1 scripts/container.sh make test'
+refuse 'make container-test X=-u DEVKIT_ISOLATED=1'
 # What the repository asks for, with the name in it: a flag that is `-c` for git means
 # something else after the subcommand, and a word of a message is not a subcommand.
-allow 'git log -c --grep=BAT_ISOLATED'
-allow 'git -C /tmp log --grep=BAT_ISOLATED'
-allow 'git commit -m "fix: BAT_ISOLATED with the alias"'
-allow 'gh issue list --search BAT_ISOLATED'
-allow 'wc -l BAT_ISOLATED'
-allow 'cat BAT_ISOLATED'
-allow 'ls BAT_ISOLATED'
-allow 'diff BAT_ISOLATED other'
+allow 'git log -c --grep=DEVKIT_ISOLATED'
+allow 'git -C /tmp log --grep=DEVKIT_ISOLATED'
+allow 'git commit -m "fix: DEVKIT_ISOLATED with the alias"'
+allow 'gh issue list --search DEVKIT_ISOLATED'
+allow 'wc -l DEVKIT_ISOLATED'
+allow 'cat DEVKIT_ISOLATED'
+allow 'ls DEVKIT_ISOLATED'
+allow 'diff DEVKIT_ISOLATED other'
 # Talking about it is not setting it.
-allow 'git commit -m "BAT_ISOLATED=1 runs the wrappers in place"'
-allow 'grep -n BAT_ISOLATED= AGENTS.md'
-allow 'echo BAT_ISOLATED=1'
+allow 'git commit -m "DEVKIT_ISOLATED=1 runs the wrappers in place"'
+allow 'grep -n DEVKIT_ISOLATED= AGENTS.md'
+allow 'echo DEVKIT_ISOLATED=1'
 # Where the environment has it, a command setting it too changes nothing worth refusing.
-in_isolated allow 'BAT_ISOLATED=1 make test'
+in_isolated allow 'DEVKIT_ISOLATED=1 make test'
 for value in 0 2 true yes ' 1' 01; do
-    BAT_ISOLATED=$value
+    DEVKIT_ISOLATED=$value
     refuse 'uv run pytest'
 done
-BAT_ISOLATED=
+DEVKIT_ISOLATED=
 
 if [ "$failures" -ne 0 ]; then
     printf '\n%s guard case(s) failed\n' "$failures" >&2

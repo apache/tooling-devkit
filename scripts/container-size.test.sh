@@ -8,7 +8,7 @@
 #
 # The runtime is a stub on PATH, as in container.test.sh, which records the argv it is given and
 # holds the run open until told to let go - so that a run holds its slot for as long as a test needs
-# it to. The machine is a meminfo file and a core count (BAT_MEMINFO, BAT_NPROC), and the slots are in
+# it to. The machine is a meminfo file and a core count (DEVKIT_MEMINFO, DEVKIT_NPROC), and the slots are in
 # the git directory of a copy of the scripts, so nobody's real slots are touched.
 #
 # Run by prek (see .pre-commit-config.yaml), and so by `make check`.
@@ -72,7 +72,7 @@ trap cleanup EXIT
     expect "and zero as zero" "$(gate_number X 000)" 0
     (gate_number X 3x) > /dev/null 2>&1 && { echo "FAIL: a count that is not one is refused" >&2; bad=$((bad + 1)); }
 
-    expect "BAT_MEMORY in g" "$(gate_mib_of 10g)" 10240
+    expect "DEVKIT_MEMORY in g" "$(gate_mib_of 10g)" 10240
     expect "in m" "$(gate_mib_of 512m)" 512
     expect "in k" "$(gate_mib_of 2097152k)" 2048
     expect "in bytes" "$(gate_mib_of 1073741824)" 1024
@@ -152,7 +152,7 @@ slots_of() {
 # Start container.sh as run $1, with the settings that follow, in the background, from the copy in
 # $copy (the repository above by default), under $shell (the script's own by default), running $cmd
 # (`true` by default). It holds once it reaches the runtime, until `let_go $1`. Whatever the
-# environment this test runs in sets - a container's own BAT_TIMEOUT, CI on a runner - is cleared
+# environment this test runs in sets - a container's own DEVKIT_TIMEOUT, CI on a runner - is cleared
 # first.
 start() {
     name=$1
@@ -160,10 +160,10 @@ start() {
     : > "$work/$name.argv"
     rm -f "$work/$name.hold"
     (
-        unset BAT_TIMEOUT BAT_MEMORY PYTEST_WORKERS CI BAT_CONTAINER_NAME BAT_DETACH BAT_PORT BAT_PYTHON
+        unset DEVKIT_TIMEOUT DEVKIT_MEMORY PYTEST_WORKERS CI DEVKIT_CONTAINER_NAME DEVKIT_DETACH DEVKIT_PORT DEVKIT_PYTHON
         export WORK="$work" ARGV_FILE="$work/$name.argv" HOLD="$work/$name.hold" \
-            PATH="$work/bin:$PATH" BAT_RUNTIME=podman BAT_ISOLATED='' BAT_NODE_INSTALL=skip \
-            BAT_MEMINFO="$work/meminfo" BAT_NPROC=16 BAT_GATE_POLL=0.2 BAT_SIZE_WORKERS=6
+            PATH="$work/bin:$PATH" DEVKIT_RUNTIME=podman DEVKIT_ISOLATED='' DEVKIT_NODE_INSTALL=skip \
+            DEVKIT_MEMINFO="$work/meminfo" DEVKIT_NPROC=16 DEVKIT_GATE_POLL=0.2 DEVKIT_SIZE_WORKERS=6
         # shellcheck disable=SC2086  # an empty $shell is no word at all, and $cmd is several
         exec env "$@" ${shell:-} "${copy:-$fake}/scripts/container.sh" ${cmd:-true}
     ) > "$work/$name.out" 2>&1 &
@@ -246,7 +246,7 @@ memory_of() {
 }
 
 deadline_of() {
-    flags_of "$1" | sed -n 's/^BAT_TIMEOUT=//p'
+    flags_of "$1" | sed -n 's/^DEVKIT_TIMEOUT=//p'
 }
 
 # How many lines slot $1 says of who holds it.
@@ -257,12 +257,12 @@ holder_lines() {
 # --- what is not sized -----------------------------------------------------------------------
 
 slots_of 1 "$m6"
-once plain BAT_SIZE_WORKERS=0
-[ "$(memory_of plain)" = 6g ] || fail "BAT_SIZE_WORKERS=0 keeps the fixed cap"
+once plain DEVKIT_SIZE_WORKERS=0
+[ "$(memory_of plain)" = 6g ] || fail "DEVKIT_SIZE_WORKERS=0 keeps the fixed cap"
 [ -z "$(workers_of plain)" ] || fail "and gives make no worker count, so the Makefile's default holds"
 [ ! -e "$fake/.git/bat-gate-slot.0" ] || fail "and takes no slot"
 
-once plain_workers BAT_SIZE_WORKERS=0 PYTEST_WORKERS=3
+once plain_workers DEVKIT_SIZE_WORKERS=0 PYTEST_WORKERS=3
 [ "$(workers_of plain_workers)" = 3 ] || fail "PYTEST_WORKERS reaches make in a run that is not sized"
 
 once ci CI=true
@@ -271,10 +271,10 @@ once ci CI=true
 [ "$(deadline_of ci)" = 3600 ] || fail "and the hour's deadline"
 [ ! -e "$fake/.git/bat-gate-slot.0" ] || fail "and takes no slot"
 
-once detached BAT_DETACH=1
+once detached DEVKIT_DETACH=1
 [ -z "$(workers_of detached)" ] || fail "a container meant to outlive this shell is not sized"
 
-once unread BAT_MEMINFO=/nonexistent
+once unread DEVKIT_MEMINFO=/nonexistent
 [ "$(memory_of unread)" = 6g ] || fail "a machine whose memory cannot be read keeps the fixed cap"
 
 once ci_false CI=false
@@ -282,42 +282,42 @@ once ci_false CI=false
 once ci_zero CI=0
 [ -n "$(workers_of ci_zero)" ] || fail "nor is CI=0"
 
-once badsize BAT_SIZE_WORKERS=lots
-[ "$status" -eq 2 ] || fail "a BAT_SIZE_WORKERS that is not a count is refused"
+once badsize DEVKIT_SIZE_WORKERS=lots
+[ "$status" -eq 2 ] || fail "a DEVKIT_SIZE_WORKERS that is not a count is refused"
 once badworkers PYTEST_WORKERS=lots
 [ "$status" -eq 2 ] || fail "a PYTEST_WORKERS that is not a count is refused"
-once badmemory BAT_MEMORY=6.5g
-[ "$status" -eq 2 ] || fail "a BAT_MEMORY this cannot read is refused, not taken for none"
+once badmemory DEVKIT_MEMORY=6.5g
+[ "$status" -eq 2 ] || fail "a DEVKIT_MEMORY this cannot read is refused, not taken for none"
 [ ! -s "$work/badmemory.argv" ] || fail "and nothing runs"
 grep -q 'a fraction, a t or a space is refused' "$work/badmemory.out" || fail "and says which forms it refuses"
 
 # --- the command says whether it is a run of the whole suite ----------------------------------
 
-# given to container.sh directly, with no target to set BAT_SIZE_WORKERS
+# given to container.sh directly, with no target to set DEVKIT_SIZE_WORKERS
 for c in 'make test' 'make test-python' 'make verify' 'make verify-fresh' 'uv run scripts/ci/verify.py'; do
     cmd=$c
-    once direct -u BAT_SIZE_WORKERS
+    once direct -u DEVKIT_SIZE_WORKERS
     cmd=''
     [ "$(workers_of direct)" = 6 ] || fail "\`scripts/container.sh $c\` is sized, as the target that runs it is"
     [ "$(memory_of direct)" = "${m6}m" ] || fail "and capped to it, not at the fixed 6g ($c)"
 done
 cmd='make test-coverage'
-once direct_coverage -u BAT_SIZE_WORKERS
+once direct_coverage -u DEVKIT_SIZE_WORKERS
 cmd=''
 [ "$(workers_of direct_coverage)" = 1 ] || fail "\`make test-coverage\` is sized for the one worker it uses"
 cmd='make test PYTEST_WORKERS=2'
-once direct_given -u BAT_SIZE_WORKERS
+once direct_given -u DEVKIT_SIZE_WORKERS
 cmd=''
 [ "$(workers_of direct_given)" = 2 ] || fail "a PYTEST_WORKERS on the make line is the count"
 [ "$(memory_of direct_given)" = "${m2}m" ] || fail "and the cap is what that count needs"
 cmd='make check'
-once direct_check -u BAT_SIZE_WORKERS
+once direct_check -u DEVKIT_SIZE_WORKERS
 cmd=''
 [ "$(memory_of direct_check)" = 6g ] || fail "a command that is no run of the whole suite is not sized"
 cmd='make verify'
-once direct_off BAT_SIZE_WORKERS=0
+once direct_off DEVKIT_SIZE_WORKERS=0
 cmd=''
-[ "$(memory_of direct_off)" = 6g ] || fail "and BAT_SIZE_WORKERS=0 turns the sizing off for one that is"
+[ "$(memory_of direct_off)" = 6g ] || fail "and DEVKIT_SIZE_WORKERS=0 turns the sizing off for one that is"
 
 # --- what one run is given -------------------------------------------------------------------
 
@@ -346,10 +346,10 @@ once two_workers
 [ "$(deadline_of two_workers)" = 7200 ] || fail "but no more than two hours"
 
 slots_of 1 "$m6"
-once cores BAT_NPROC=3
+once cores DEVKIT_NPROC=3
 [ "$(workers_of cores)" = 3 ] || fail "no more workers than cores"
 
-once coverage BAT_SIZE_WORKERS=1
+once coverage DEVKIT_SIZE_WORKERS=1
 [ "$(workers_of coverage)" = 1 ] || fail "a serial command is given one worker"
 [ "$(deadline_of coverage)" = 3600 ] ||
     fail "and the hour: it has all the workers it can use, so nothing is stretched"
@@ -369,17 +369,17 @@ once serial PYTEST_WORKERS=0
 [ "$(workers_of serial)" = 1 ] || fail "PYTEST_WORKERS=0, serial to the Makefile, is one worker"
 [ "$(memory_of serial)" = "${m1}m" ] || fail "and holds what one worker needs"
 
-once given_deadline BAT_TIMEOUT=90 PYTEST_WORKERS=1
-[ "$(deadline_of given_deadline)" = 90 ] || fail "BAT_TIMEOUT given outright is not stretched"
+once given_deadline DEVKIT_TIMEOUT=90 PYTEST_WORKERS=1
+[ "$(deadline_of given_deadline)" = 90 ] || fail "DEVKIT_TIMEOUT given outright is not stretched"
 
 given_g=$(((m2 + 1023) / 1024))
-once given_memory BAT_MEMORY="${given_g}g"
-[ "$(memory_of given_memory)" = "${given_g}g" ] || fail "BAT_MEMORY given outright is the cap, as it was given"
+once given_memory DEVKIT_MEMORY="${given_g}g"
+[ "$(memory_of given_memory)" = "${given_g}g" ] || fail "DEVKIT_MEMORY given outright is the cap, as it was given"
 [ "$(workers_of given_memory)" = "$(gate_fit $((given_g * 1024)) 16 6)" ] ||
     fail "and the workers are as many as it holds"
 
-once uncapped BAT_MEMORY=0
-grep -qxF -- '--memory' "$work/uncapped.argv" && fail "BAT_MEMORY=0 runs with no cap"
+once uncapped DEVKIT_MEMORY=0
+grep -qxF -- '--memory' "$work/uncapped.argv" && fail "DEVKIT_MEMORY=0 runs with no cap"
 [ "$(workers_of uncapped)" = 6 ] || fail "and is sized all the same"
 
 # a machine too small for one worker of the suite: one worker, and a cap of what the slot holds
@@ -399,14 +399,14 @@ grep -q 'no cap podman takes' "$work/tiny_machine.out" || fail "and says why it 
 
 # two slots: each sized for its share of the machine and of its cores
 slots_of 2 "$m6"
-once halves BAT_NPROC=8
+once halves DEVKIT_NPROC=8
 [ "$(workers_of halves)" = 4 ] || fail "a run on a machine of two slots takes half the cores"
 [ "$(memory_of halves)" = "${m4}m" ] || fail "and the memory four need"
 # where the cores and the command allow more, the memory of one slot is what bounds a run
-once half_memory BAT_NPROC=32 BAT_SIZE_WORKERS=12
+once half_memory DEVKIT_NPROC=32 DEVKIT_SIZE_WORKERS=12
 [ "$(workers_of half_memory)" = 6 ] || fail "a run on a machine of two slots takes half the memory"
 # one core between two slots: each has one, not none
-once one_core BAT_NPROC=1
+once one_core DEVKIT_NPROC=1
 [ "$(workers_of one_core)" = 1 ] || fail "one core shared between two slots still gives each a worker"
 [ "$(memory_of one_core)" = "${m1}m" ] || fail "and the memory one worker needs, not the whole slot"
 grep -q 'one worker needs' "$work/one_core.out" && fail "and no warning: the memory fits"
@@ -476,7 +476,7 @@ let_go waiter
 # arrives after - even when it would not look again for half a minute
 start holder
 reached holder || fail "the holder starts again"
-start blocked BAT_GATE_POLL=30
+start blocked DEVKIT_GATE_POLL=30
 waits blocked || fail "a run waits, looking again only every 30s"
 let_go holder
 start newcomer
@@ -499,12 +499,12 @@ let_go passed_over
 rmdir "$fake/.git/bat-gate-slot.1"
 slots_of 1 "$m6"
 
-# BAT_MEMORY given, or 0, still waits for a slot: it is a run of the whole suite all the same
+# DEVKIT_MEMORY given, or 0, still waits for a slot: it is a run of the whole suite all the same
 start holder
 reached holder || fail "the holder starts again"
-start given_waits BAT_MEMORY="${given_g}g"
+start given_waits DEVKIT_MEMORY="${given_g}g"
 waits given_waits || fail "a run given its memory still waits for a slot"
-start uncapped_waits BAT_MEMORY=0
+start uncapped_waits DEVKIT_MEMORY=0
 waits uncapped_waits || fail "and so does one given no cap"
 let_go holder
 within "[ \$(running given_waits uncapped_waits) -eq 1 ]" 50 || fail "one of them starts once the slot is let go"
@@ -608,16 +608,16 @@ if command -v make >/dev/null 2>&1; then
     targets=$(make -s -n -C "$here/.." container-verify container-verify-fresh container-test \
         container-test-py314 container-test-coverage container-pytest container-check 2>&1)
     for t in 'make verify' 'make verify-fresh' 'make test$'; do
-        printf '%s\n' "$targets" | grep "scripts/container.sh $t" | grep -q 'BAT_SIZE_WORKERS=6' ||
+        printf '%s\n' "$targets" | grep "scripts/container.sh $t" | grep -q 'DEVKIT_SIZE_WORKERS=6' ||
             fail "\`$t\` runs the whole suite and is sized, up to six workers"
     done
-    printf '%s\n' "$targets" | grep 'make test-coverage' | grep -q 'BAT_SIZE_WORKERS=1 ' ||
+    printf '%s\n' "$targets" | grep 'make test-coverage' | grep -q 'DEVKIT_SIZE_WORKERS=1 ' ||
         fail "the coverage run is serial, and sized for one worker"
-    printf '%s\n' "$targets" | grep -E 'make (pytest|check)' | grep -q 'BAT_SIZE_WORKERS' &&
+    printf '%s\n' "$targets" | grep -E 'make (pytest|check)' | grep -q 'DEVKIT_SIZE_WORKERS' &&
         fail "a narrow run, or the hooks, are not sized"
-    off=$(make -s -n -C "$here/.." container-verify container-test-coverage BAT_SIZE_WORKERS=0 2>&1)
-    [ "$(printf '%s\n' "$off" | grep -c 'BAT_SIZE_WORKERS=0 ')" -eq 2 ] ||
-        fail "BAT_SIZE_WORKERS=0 on the make line turns the sizing off, for coverage too"
+    off=$(make -s -n -C "$here/.." container-verify container-test-coverage DEVKIT_SIZE_WORKERS=0 2>&1)
+    [ "$(printf '%s\n' "$off" | grep -c 'DEVKIT_SIZE_WORKERS=0 ')" -eq 2 ] ||
+        fail "DEVKIT_SIZE_WORKERS=0 on the make line turns the sizing off, for coverage too"
 fi
 
 if [ "$failures" -ne 0 ]; then

@@ -42,7 +42,7 @@ lock="$assets/node_modules/.bat-install-lock"
 # in the preamble every container command goes through - so a half-finished
 # dependency change would lock you out of `make container-shell`, which is where
 # the repair has to be run from. Skipping is per-invocation and says so.
-if [ "${BAT_NODE_INSTALL:-}" = "skip" ]; then
+if [ "${DEVKIT_NODE_INSTALL:-}" = "skip" ]; then
     exit 0
 fi
 
@@ -105,9 +105,9 @@ If yarn refused the lockfile, package.json and yarn.lock disagree and the fix is
 to update the lockfile - from inside the container, since the toolchain does not
 run on the host:
 
-    BAT_NODE_INSTALL=skip scripts/container.sh sh -c 'cd assets && yarn install'
+    DEVKIT_NODE_INSTALL=skip scripts/container.sh sh -c 'cd assets && yarn install'
 
-BAT_NODE_INSTALL=skip is what gets you a shell while this is broken; it skips
+DEVKIT_NODE_INSTALL=skip is what gets you a shell while this is broken; it skips
 this check for the one command it is set on.
 MSG
     exit 1
