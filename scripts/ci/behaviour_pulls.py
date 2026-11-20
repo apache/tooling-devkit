@@ -76,17 +76,25 @@ MAIN: Final = "main"
 KEYS: Final = (gate.ALLOW, gate.HARNESS)
 
 
-
-def _conf(key: str) -> str:
-    """What `devkit.conf` gives `key`: read as lines of `KEY=value`, never run."""
-    for line in (ROOT / "devkit.conf").read_text().splitlines():
+def _conf(key: str, valid: re.Pattern[str]) -> str:
+    """What `devkit.conf` gives `key`, if it is `valid`: read as lines of `KEY=value` and never run, the
+    first one that names the key, as the shell scripts read it."""
+    try:
+        lines = (ROOT / "devkit.conf").read_text().split("\n")
+    except OSError as error:
+        raise SystemExit(f"devkit.conf cannot be read: {error}") from error
+    for line in lines:
         name, _, value = line.partition("=")
         if name == key:
+            if valid.fullmatch(value) is None:
+                raise SystemExit(f"devkit.conf has no usable {key}: {value!r}")
             return value
     raise SystemExit(f"devkit.conf has no {key}")
 
 
-REPOSITORY: Final = os.environ.get("GITHUB_REPOSITORY") or _conf("DEVKIT_REPOSITORY")
+REPOSITORY: Final = os.environ.get("GITHUB_REPOSITORY") or _conf(
+    "DEVKIT_REPOSITORY", re.compile(r"[\w.-]+/[\w.-]+")
+)
 API: Final = os.environ.get("GITHUB_API_URL", "https://api.github.com")
 SERVER: Final = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
 MERGED_AS: Final = re.compile(r"\(#(\d+)\)$")

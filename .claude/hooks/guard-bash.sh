@@ -54,10 +54,18 @@ isolated() {
 }
 
 # The service is read from devkit.conf and never sourced: this runs before anything else has been
-# checked, and a file of the repository is not to be run by the code that guards it. Without one
-# the guard stays on, which is the safe answer to "am I already inside".
+# checked, and a file of the repository is not to be run by the code that guards it. But that file is
+# the repository's to write, so it must not be able to switch the guard off: the guard stands down only
+# where it lives at /run/<service>, which is where the container mounts the working tree, and only for a
+# name that is one (see checkout-id.sh). A name like `.`, `..`, `user` or a missing file leaves it on,
+# which is the safe answer to "am I already inside".
 _service=$(sed -n 's/^DEVKIT_SERVICE=//p' "$(dirname -- "$0")/../../devkit.conf" 2>/dev/null | head -n 1)
-if [ "${DEVKIT_GUARD_FORCE:-}" != 1 ] && [ -n "$_service" ] && [ -d "/run/$_service" ]; then
+case $_service in
+    '' | [!a-z0-9]* | *[!a-z0-9_-]*) _service='' ;;
+    *) : ;;
+esac
+_here=$(CDPATH='' cd -- "$(dirname -- "$0")/../.." 2>/dev/null && pwd -P)
+if [ "${DEVKIT_GUARD_FORCE:-}" != 1 ] && [ -n "$_service" ] && [ "$_here" = "/run/$_service" ]; then
     exit 0
 fi
 

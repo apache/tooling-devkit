@@ -359,11 +359,12 @@ the same rules by reading them.
 ## Changing a file that comes from the kit
 
 Some files in this repository are copies of files in `apache/tooling-devkit`: this one, the guard, the
-commands, the scripts and the shared workflows. The first line of each copy says where to change it.
+commands, the scripts and the shared workflows. The first line of each copy will say where to change it.
 
-The sync script, `devkit.lock`, the drift check and the extension points named below are not in the kit
-yet: they are the next items of apache/tooling-migration#50. Until they land, a change to a copied file
-is a pull request in the kit, and the sync is a copy by hand.
+The sync script, `devkit.lock`, the drift check, the line at the top of each copy, the `files:` list of
+`devkit.conf` and the extension points named below are not in the kit yet: they are the next items of
+apache/tooling-migration#50. Until they land, a change to a copied file is a pull request in the kit, and
+the sync is a copy by hand.
 
 - **Do not edit a copied file in this repository.** A copy that differs from the kit at the commit in
   `devkit.lock` is drift, and CI fails on it.

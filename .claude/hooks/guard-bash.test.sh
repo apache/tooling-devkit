@@ -1035,6 +1035,43 @@ for value in 0 2 true yes ' 1' 01; do
 done
 DEVKIT_ISOLATED=
 
+# The guard stands down where it lives at /run/<service>, and nowhere else. devkit.conf is the
+# repository's to write, so no value in it may turn the guard off: it is run here from a copy in a
+# directory of its own, as a repository would hold it, with the override for these tests removed.
+# What a name has to be is the rule of checkout-id.sh. (That it does stand down at /run/<service> is
+# not tried here: nothing makes a directory there.)
+conf_root=$(mktemp -d) || exit 1
+mkdir -p "$conf_root/.claude/hooks"
+cp "$guard" "$conf_root/.claude/hooks/guard-bash.sh"
+refuses_with_conf() {
+    printf '%s\n' "$1" > "$conf_root/devkit.conf"
+    _status=0
+    payload_for 'uv run pytest' | env -u DEVKIT_GUARD_FORCE sh "$conf_root/.claude/hooks/guard-bash.sh" \
+        > /dev/null 2>&1 || _status=$?
+    if [ "$_status" -ne 2 ]; then
+        printf 'allowed the toolchain on the host with devkit.conf holding: %s\n' "$1" >&2
+        failures=$((failures + 1))
+    fi
+}
+for service in devkit . .. ../.. / user run lock systemd '-x' '.hidden' 'a b' 'A' "devkit$(printf '\r')" \
+    'devkit # a comment'; do
+    refuses_with_conf "DEVKIT_SERVICE=$service"
+done
+refuses_with_conf 'DEVKIT_SERVICE='
+refuses_with_conf 'something else'
+# the first line naming the key is the one that counts, as in checkout-id.sh
+refuses_with_conf "DEVKIT_SERVICE=.
+DEVKIT_SERVICE=devkit"
+rm -f "$conf_root/devkit.conf"
+_status=0
+payload_for 'uv run pytest' | env -u DEVKIT_GUARD_FORCE sh "$conf_root/.claude/hooks/guard-bash.sh" \
+    > /dev/null 2>&1 || _status=$?
+if [ "$_status" -ne 2 ]; then
+    printf 'allowed the toolchain on the host with no devkit.conf at all\n' >&2
+    failures=$((failures + 1))
+fi
+rm -rf "$conf_root"
+
 if [ "$failures" -ne 0 ]; then
     printf '\n%s guard case(s) failed\n' "$failures" >&2
     exit 1

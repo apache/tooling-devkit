@@ -20,11 +20,16 @@ devkit_conf() {
     sed -n "s/^$1=//p" "$script_dir/../devkit.conf" 2>/dev/null | head -n 1
 }
 
+# The name goes into image, volume, container and network names, into sed patterns and into a path under
+# /run, so it is what every one of them accepts and nothing else: lower case letters, digits, `-` and `_`,
+# starting with a letter or a digit. A trailing carriage return or a comment is not part of one.
 DEVKIT_SERVICE=$(devkit_conf DEVKIT_SERVICE)
-if [ -z "$DEVKIT_SERVICE" ]; then
-    echo "devkit.conf has no DEVKIT_SERVICE: $script_dir/../devkit.conf" >&2
-    exit 1
-fi
+case $DEVKIT_SERVICE in
+    '' | [!a-z0-9]* | *[!a-z0-9_-]*)
+        echo "devkit.conf has no usable DEVKIT_SERVICE (lower case letters, digits, - and _): $script_dir/../devkit.conf" >&2
+        exit 1
+        ;;
+esac
 # Where the container mounts the working tree.
 # shellcheck disable=SC2034
 DEVKIT_RUN_DIR=/run/$DEVKIT_SERVICE

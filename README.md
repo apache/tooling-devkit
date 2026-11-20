@@ -17,18 +17,33 @@ The files sit at the paths a service repository uses for them.
 | `.claude/commands/` | the pre-PR adversarial pass, the end-to-end run and the screenshots |
 | `.claude/settings.json` | the permission allowlist and the hook registration |
 | `scripts/` | the container wrappers, the worktree scripts, the review reader and the CI helpers |
-| `.github/` | the shared workflows and the apt-install action |
+| `workflows/` | the shared workflows, to copy into `.github/workflows/` of a service. They are kept here, not in `.github/workflows/`, so that GitHub does not run them in the kit |
+| `.github/actions/` | the apt-install action |
+| `.github/workflows/test.yml` | the kit's own CI: the shell tests, and the Python compiles |
 | `devkit.conf` | the names the shared files read: `DEVKIT_SERVICE`, `DEVKIT_REPOSITORY` |
 
-A service repository has a `devkit.conf` of its own. The shared files contain no name of any one service:
-the variables they read start with `DEVKIT_`, and the image, volume and container names take the service
-name from `devkit.conf`.
+A service repository has a `devkit.conf` of its own. The variables the shared files read start with
+`DEVKIT_`, and the image, volume and container names take the service name from `devkit.conf`. Some files
+still carry what belongs to tooling-agenda: see "Status".
 
 ## Status
 
-This is the first version. It holds the files as tooling-agenda has them, with the names taken out. Not
-yet here: the sync script, `devkit.lock`, the drift check, the extension points for what a repository
-needs in its own form, and `pr-preflight.sh`. See the tracking issue.
+This is the first version. It holds the files as tooling-agenda has them, with the service name and the
+variable prefix taken out. Not yet here: the sync script, `devkit.lock`, the drift check, the extension
+points for what a repository needs in its own form, and `pr-preflight.sh`. See the tracking issue.
+
+What still belongs to tooling-agenda, and has to be made general or taken out:
+
+- `.claude/settings.json`: `Read(./agenda.yaml)`, and the `make container-minutes-reading` entries.
+- `scripts/ci/verify.py`: `MINUTES_CORPUS` and the `corpus` stage, and the frontend fixtures under
+  `tests/data`.
+- `workflows/`: the ASF runner labels, the `subversion` and LDAP packages, and the reference to
+  `minutes-corpus.yml`.
+- `scripts/Caddyfile`: the ASF OAuth proxy.
+- `scripts/pr-review.sh`: a comment that points at `scripts/pr-preflight.sh`.
+- The variables that no script of the kit reads: the tests and the e2e specs of a service read
+  `DEVKIT_E2E_URL`, `DEVKIT_E2E_HOST`, `DEVKIT_BEHAVIOUR_OUT` and others, so a service renames its own at
+  the same time as it takes the kit.
 
 ## Tests
 

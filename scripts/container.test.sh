@@ -443,6 +443,47 @@ isolated env DEVKIT_PORT=8080:8080 "$script" true
 capture env DEVKIT_ISOLATED=0
 [ -s "$work/argv" ] || fail "DEVKIT_ISOLATED=0 still runs in a container"
 
+# --- a second service: the names come from devkit.conf, not from the kit ---------------------
+
+# Every name above is `devkit`, which is also what devkit.conf of the kit says. These are for a
+# repository that says something else: nothing may still be `devkit`-named but the labels, which name
+# the kit's own convention for what a checkout makes.
+other="$work/other"
+mkdir -p "$other/scripts"
+for f in container.sh container-size.sh checkout-id.sh checkout-resources.sh seed-volumes.sh; do
+    cp "$here/$f" "$other/scripts/$f"
+done
+printf 'DEVKIT_SERVICE=other\nDEVKIT_REPOSITORY=apache/tooling-other\n' > "$other/devkit.conf"
+script="$other/scripts/container.sh"
+capture env
+[ "$status" -eq 0 ] || fail "a repository with its own service name runs"
+grep -qxF 'other-dev' "$work/argv" || fail "the image takes the service name"
+grep -qxF '/run/other' "$work/argv" || fail "the working directory is /run/<service>"
+grep -q ':/run/other:z$' "$work/argv" || fail "the tree is mounted at /run/<service>"
+grep -qE '^other-run-' "$work/argv" || fail "the container takes the service name"
+if grep -q 'devkit-' "$work/argv"; then
+    fail "nothing is still named for the kit's own service"
+fi
+
+# a name that is not a name is refused before anything runs, not turned into an image, a volume or a
+# path under /run: every one of these is something a repository's own file could say
+for bad in '' . .. ../.. / '-x' '.hidden' 'a b' A "other$(printf '\r')" 'other # note'; do
+    printf 'DEVKIT_SERVICE=%s\n' "$bad" > "$other/devkit.conf"
+    capture env
+    [ "$status" -ne 0 ] || fail "DEVKIT_SERVICE='$bad' is refused"
+    [ ! -s "$work/argv" ] || fail "and nothing is run for DEVKIT_SERVICE='$bad'"
+done
+rm -f "$other/devkit.conf"
+capture env
+[ "$status" -ne 0 ] || fail "no devkit.conf is refused"
+script="$here/container.sh"
+
+# The inner script of e2e-container.sh is single-quoted: it expands in the container, so the container
+# has to be handed the working directory the script computed. The runs here stand in for the tools, so
+# the container's own `run -d` is not made; this is the one place the pairing is held.
+grep -qF -- '-e "DEVKIT_RUN_DIR=$DEVKIT_RUN_DIR"' "$here/e2e-container.sh" ||
+    fail "e2e-container.sh hands its container DEVKIT_RUN_DIR, which its inner script reads"
+
 if [ "$failures" -ne 0 ]; then
     echo "$failures check(s) failed" >&2
     exit 1
