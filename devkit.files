@@ -30,6 +30,8 @@ scripts/ci/quality.py
 scripts/ci/quality_allowances.py
 scripts/ci/quality_meters.py
 scripts/ci/quality_moves.py
+scripts/ci/selection_audit.py
+scripts/ci/selection_rollup.py
 scripts/ci/trailers.py
 scripts/ci/verify.py
 scripts/container-gc.sh
@@ -56,3 +58,5 @@ scripts/worktree-held.sh
 scripts/worktree-sweep.sh
 scripts/worktree-sweep.test.sh
 tests/test_fast_stage.py
+tests/test_selection_audit.py
+tests/test_selection_rollup.py

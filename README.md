@@ -17,7 +17,7 @@ The files sit at the paths a service repository uses for them.
 | `.claude/commands/` | the pre-PR adversarial pass, the end-to-end run and the screenshots |
 | `.claude/settings.json` | the permission allowlist and the hook registration |
 | `scripts/` | the container wrappers, the worktree scripts, the review reader and the CI helpers, among them the fast local test stage (`scripts/ci/fast_stage.py`) |
-| `tests/` | the Python tests of the scripts that have them: so far the fast stage's |
+| `tests/` | the Python tests of the scripts that have them: so far the fast stage's and the selection audit's |
 | `.github/actions/` | the apt-install action |
 | `.github/workflows/test.yml` | the kit's own CI: the shell tests, and the Python compiles |
 | `devkit.conf` | the names the shared files read: `DEVKIT_SERVICE`, `DEVKIT_REPOSITORY` |
@@ -82,8 +82,9 @@ for t in .claude/hooks/guard-bash.test.sh scripts/*.test.sh scripts/ci/*.test.sh
 python3 -m pytest tests -q
 ```
 
-`pytest` is the only Python package the tests need. Two tests read the `Makefile` of a service, and skip
-where there is none, as in the kit.
+The tests need `pytest` and `pytest-xdist`: the CI of the kit installs the versions that tooling-agenda locks
+(`pytest==9.1.1`, `pytest-xdist==3.8.0`). Two tests read the `Makefile` of a service, and skip where there
+is none, as in the kit.
 
 ## License
 
