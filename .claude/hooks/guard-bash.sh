@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # Hold the rules AGENTS.md states as absolutes, at the moment one is about to be broken.
 #
 # Claude Code runs this before every Bash tool call, handing it the call as JSON on

@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # Make this checkout's node_modules volume match this checkout's lockfile.
 #
 # Runs inside the dev container, where the repository is bind-mounted and

@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # Find the worktrees whose work is over, and finish them with worktree-done.sh.
 #
 #   scripts/worktree-sweep.sh        # lists every linked worktree, finished or kept and why

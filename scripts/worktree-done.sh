@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # Finish with a linked worktree: remove it, and everything the container scripts made for it.
 #
 #   scripts/worktree-done.sh ../<repository>-<topic>

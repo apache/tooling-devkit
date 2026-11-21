@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # Which checkout a script is running in, so that several working copies of this
 # repository can run containers side by side.
 #

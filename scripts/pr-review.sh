@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # Read a pull request's review in full - including the part the headline hides.
 #
 # A Copilot review that says "generated no new comments" has often found something and

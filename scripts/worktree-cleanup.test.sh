@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # What worktree-done.sh and container-gc.sh remove, and - the half that matters - what they
 # must leave alone: a live checkout's things, the primary's, another project's, a name given
 # outright, and a worktree git would not remove.

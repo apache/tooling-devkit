@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 """Telling code that moved from code that arrived.
 
 Meters key on where a finding is - a path, or a path and what was found in it - which is

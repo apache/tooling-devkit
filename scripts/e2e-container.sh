@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # Run the Playwright end-to-end suite entirely in containers.
 #
 # This is what `make e2e-test` runs. Nothing is installed on the host: the app

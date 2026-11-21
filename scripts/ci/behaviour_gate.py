@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 """What a branch may ask of the behaviour comparison (`scripts/ci/behaviour.py`), read from git.
 
 The comparison runs the branch's own code, so whatever the branch says about itself is checked against

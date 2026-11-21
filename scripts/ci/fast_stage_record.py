@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 """What a pytest run leaves for the next fast stage, in state/fast-stage/ (`scripts/ci/fast_stage.py`).
 
 A run that passes records what each test file took. A full run of each half of the suite - `test-python`

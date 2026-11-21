@@ -1,4 +1,5 @@
 #!/bin/bash
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 set -eu
 
 # This script is used by the service in Puppet
