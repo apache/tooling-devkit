@@ -258,6 +258,17 @@ def test_a_new_list_checking_test_joins_tier0_by_itself(tree: pathlib.Path) -> N
     assert "tests/test_every_table.py" in selected(tree)
 
 
+def test_the_behaviour_record_is_never_selected(tree: pathlib.Path) -> None:
+    """tests/behaviour/ runs only under scripts/ci/behaviour.py: its conftest ignores its tests otherwise, but
+    not a file named on the command line, which then errors. No rule may name one, tier 0's included."""
+    record = "from app.roster.service import roster\n\ndef test_a(snapshot):\n    assert 'service.py'\n"
+    _write(tree, {"tests/behaviour/test_behaviour.py": record})
+    failed = {"tests/behaviour/test_behaviour.py"}
+    plan = fast_stage.make_plan(tree, {"app/roster/service.py"}, DURATIONS, failed, limit=1.0)
+    assert plan.rules
+    assert not [path for path in plan.rules if path.startswith("tests/behaviour/")]
+
+
 # --- failed last -----------------------------------------------------------------------------
 
 

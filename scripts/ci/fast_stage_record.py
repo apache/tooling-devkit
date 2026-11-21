@@ -58,7 +58,7 @@ def _write_json(path: pathlib.Path, value: object) -> None:
     path.write_text(json.dumps(value, indent=1, sort_keys=True) + "\n")
 
 
-def _file_of(root: pathlib.Path, classname: str) -> str | None:
+def file_of(root: pathlib.Path, classname: str) -> str | None:
     """The test file a junit `classname` (`tests.api.test_x.TestY`) belongs to."""
     parts = classname.split(".")
     for end in range(len(parts), 0, -1):
@@ -72,7 +72,7 @@ def read_junit(root: pathlib.Path, path: pathlib.Path) -> dict[str, float]:
     seconds: dict[str, float] = {}
     tree = ElementTree.parse(path)  # noqa: S314 - pytest's own report of this run, written a moment ago
     for case in tree.iter("testcase"):
-        if file := _file_of(root, case.get("classname", "")):
+        if file := file_of(root, case.get("classname", "")):
             seconds[file] = seconds.get(file, 0.0) + float(case.get("time") or 0)
     return seconds
 

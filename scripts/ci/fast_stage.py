@@ -53,6 +53,7 @@ from fast_stage_record import DURATIONS, GREEN, STATE, begin, git, passed, read_
 ROOT: Final = pathlib.Path(__file__).resolve().parents[2]
 LASTFAILED: Final = ".pytest_cache/v/cache/lastfailed"
 CONFTEST: Final = "tests/conftest.py"
+BEHAVIOUR: Final = "tests/behaviour/"
 
 NEEDS_THE_SUITE: Final = 10
 """The exit status for a change the stage cannot answer: no pytest status (0 to 5), so no test failure."""
@@ -190,9 +191,11 @@ def full_run_reasons(root: pathlib.Path, changed: set[str]) -> list[str]:
 
 
 def suite(root: pathlib.Path) -> dict[str, str]:
-    """Each test file, and what it says - read once, since every rule below reads it."""
+    """Each test file, and what it says - read once, since every rule below reads it. Not the behaviour
+    record's: it runs only under scripts/ci/behaviour.py, and its conftest ignores it in a plain run but not
+    when it is named on the command line, where it errors."""
     paths = sorted(path.relative_to(root).as_posix() for path in (root / "tests").rglob("test_*.py"))
-    return {path: (root / path).read_text(errors="replace") for path in paths}
+    return {path: (root / path).read_text(errors="replace") for path in paths if not path.startswith(BEHAVIOUR)}
 
 
 def _stem(name: str) -> str:
