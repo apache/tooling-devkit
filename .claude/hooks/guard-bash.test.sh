@@ -134,6 +134,13 @@ allow 'make container-snapshot-base # once per pull; re-run after rebasing'
 allow 'make container-check CHECK_REF=origin/production'
 refuse "make container-check CHECK_REF='origin/main;touch x'"
 refuse 'make container-check CHECK_REF=$(touch x)'
+# the fast stage takes the commit to measure the change from, a plain ref in the same way
+allow 'make container-test-fast'
+allow 'make container-test-fast FAST_BASE=origin/main'
+allow 'make container-test-fast FAST_BASE=HEAD~3 PYTEST_WORKERS=2'
+refuse "make container-test-fast FAST_BASE='HEAD;touch x'"
+refuse 'make container-test-fast FAST_BASE=$(touch x)'
+refuse 'make test-fast'
 
 # A make wrapper takes its target and NAME=value, and nothing else: each of these ran its payload on
 # the host when the rule was a list of things to refuse.
