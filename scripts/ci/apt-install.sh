@@ -31,6 +31,7 @@
 # `runs-on` labels in .github/workflows/build.yml), and the archive mirror inside the region
 # is both the closest one and the one Canonical's load does not reach - so it is tried first,
 # and what the runner image shipped with is the fallback.
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 set -eu
 
 if [ "$#" -eq 0 ]; then

@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # Which checkout made a volume, container or network, and so whether it may be removed.
 #
 # Sourced, not run, like checkout-id.sh. The container scripts create volumes, containers and

@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # Type-check the Playwright specs, in the Playwright image, without starting the app.
 #
 # This is what `make e2e-typecheck` runs, and it is the only thing that checks these

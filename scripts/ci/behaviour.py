@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 """Whether this change alters what the app answers, and whether it says it means to.
 
     scripts/container.sh uv run scripts/ci/behaviour.py base     # record with the merge base

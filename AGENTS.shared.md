@@ -1,3 +1,5 @@
+<!-- Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy. -->
+
 # AGENTS.shared.md
 
 The rules every Tooling repository shares: the agent rules, and what holds them. This file comes from
@@ -360,15 +362,17 @@ the same rules by reading them.
 ## Changing a file that comes from the kit
 
 Some files in this repository are copies of files in `apache/tooling-devkit`: this one, the guard, the
-commands, the scripts and the shared workflows. The first line of each copy will say where to change it.
+commands, the scripts and the shared workflows. A line near the top of each copy says where to change it.
+Two files cannot carry it, `.claude/settings.json` and `scripts/ci/LICENSE-template.txt`, and the check
+covers them all the same.
 
-The sync script, `devkit.lock`, the drift check, the line at the top of each copy, the `files:` list of
-`devkit.conf` and the extension points named below are not in the kit yet: they are the next items of
-apache/tooling-migration#50. Until they land, a change to a copied file is a pull request in the kit, and
-the sync is a copy by hand.
+`scripts/devkit-sync.sh <ref>` copies the files that the kit lists in `devkit.files` and writes the commit
+to `devkit.lock`. `scripts/devkit-sync.sh --check` compares each file with the kit at that commit. Not in
+the kit yet, and the next items of apache/tooling-migration#50: the Action that opens a sync pull
+request, the CI job that runs the check in each repository, and the extension points named below.
 
 - **Do not edit a copied file in this repository.** A copy that differs from the kit at the commit in
-  `devkit.lock` is drift, and CI fails on it.
+  `devkit.lock` is drift. The check fails on it, and CI does once the repository runs the check there.
 - **To change a copied file, open a pull request in `apache/tooling-devkit`.** When it is merged, run
   `scripts/devkit-sync.sh <ref>` here, or merge the sync pull request that the kit opens.
 - **If the drift check fails, a copy was edited.** Move the change to the kit, and run the sync again.
@@ -376,8 +380,9 @@ the sync is a copy by hand.
   a value in `devkit.conf`; an extension point of the kit (a local file the shared file calls, such as
   `scripts/local/<name>.sh`, or extra guard rules in `.claude/guard.local`, which can add a restriction and
   cannot remove a shared rule); not merging the sync pull request yet, which is not drift because the
-  check compares with the commit in `devkit.lock`; taking the file out of `files:` in `devkit.conf` and
-  keeping it as a local file; and, last, an override in `devkit.lock` with an issue and a date.
+  check compares with the commit in `devkit.lock`; naming the file in `DEVKIT_SKIP` in `devkit.conf` and
+  keeping it as a local file; and, last, an override in `devkit.lock` with an issue and a date
+  (`override <path> <issue> until <YYYY-MM-DD>`).
 - **A change to the shared rules or the guard is reviewed by the Tooling PMC.**
 
 ## Pull requests

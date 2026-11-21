@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 """The two bases a branch is compared against, recorded once for each merge base and shared by
 every worktree of this repository.
 

@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # Give a checkout's own .venv and node_modules volumes a starting point, rather
 # than provisioning them from nothing.
 #

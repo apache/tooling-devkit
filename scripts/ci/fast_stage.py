@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 """The fast local stage: the tests most likely to catch a mistake, run first and stopped at the first
 failure (`make test-fast`). It is not the gate - `make container-verify` is, and CI runs everything.
 

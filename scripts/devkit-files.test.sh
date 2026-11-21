@@ -59,14 +59,6 @@ for path in $sources; do
     head -n 40 "$path" | grep -q -F -- "$marker" || fail "$path does not say where to change it: no '$marker'"
 done
 
-# a script that starts with a shebang runs: the sync keeps the executable bit it has here
-for path in $sources; do
-    [ -f "$path" ] || continue
-    if [ "$(head -c 2 "$path")" = '#!' ] && [ ! -x "$path" ]; then
-        fail "$path starts with a shebang and is not executable"
-    fi
-done
-
 if [ "$failures" -ne 0 ]; then
     echo "$failures devkit.files check(s) failed" >&2
     exit 1

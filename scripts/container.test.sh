@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # What container.sh asks the runtime for, and what it must go on asking for.
 #
 # Four of those arguments are there for nobody's command, and each because its absence

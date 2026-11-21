@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # How many pytest workers a run of the whole suite gets, how much memory its container may have, and
 # the slots that keep the runs of several sessions from asking for more memory than the machine has.
 #

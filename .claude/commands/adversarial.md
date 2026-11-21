@@ -2,6 +2,7 @@
 description: Hand a pushed branch to a fresh subagent and ask it to break the change
 argument-hint: "[branch] (defaults to the current one)"
 ---
+<!-- Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy. -->
 
 # Attack the branch before the pull request
 

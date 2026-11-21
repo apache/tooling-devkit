@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 """Everything that gates a push, at once, and only what changed since it last passed.
 
 `make verify` runs each stage as the make target of the same name, all of them at the same time:

@@ -1,3 +1,4 @@
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 name: Analyze using pre-commit hooks
 
 on:

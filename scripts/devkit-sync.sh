@@ -4,7 +4,8 @@
 # kit has them.
 #
 #   scripts/devkit-sync.sh <ref>     copy the files of the kit at <ref> here, and write that commit to
-#                                    devkit.lock. Nothing is committed.
+#                                    devkit.lock. Nothing is committed. <ref> is a branch, a tag or a full
+#                                    commit id: git does not fetch an abbreviated one.
 #   scripts/devkit-sync.sh --check   compare each file with the kit at the commit in devkit.lock. Prints
 #                                    what differs and each override, and fails on drift, on an override
 #                                    past its date, and where there is no usable devkit.lock.

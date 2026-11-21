@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # Find what the container scripts made for checkouts that no longer exist, and remove it.
 #
 #   scripts/container-gc.sh          # lists it, and removes nothing
