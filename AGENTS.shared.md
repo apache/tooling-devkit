@@ -33,6 +33,7 @@ variables the scripts read all start with `DEVKIT_`.
   | `make container-check-all` | every hook over every file, as `verify` and CI run them |
   | `make container-test` | pytest + vitest |
   | `make container-pytest ARGS='...'` | one question: `ARGS='tests/api/test_x.py -k rename -q'`, serial |
+  | `make container-test-fast` | while iterating: what this change most likely breaks, first failure stops it; exits 10 when the change needs `container-test` (CONTRIBUTING.md). Not the gate - `container-verify` is |
   | `make container-test-coverage` | pytest with coverage instrumentation (slower, python only) |
   | `make container-test-py314` | the tests in a venv of their own on 3.14 (`DEVKIT_PYTHON`); 3.14 is the default too |
   | `make container-quality` | the quality ratchet (complexity, dead code, duplication) |
@@ -84,7 +85,7 @@ variables the scripts read all start with `DEVKIT_`.
   held waits and says who holds them, rather than starting beside them and being OOM-killed, so
   there is no need to gate one at a time. `PYTEST_WORKERS` or `DEVKIT_MEMORY` given outright
   replaces the size, not the wait; CI keeps its pinned settings. What the slots do not cover - a
-  narrow pytest, an e2e server, a clone kept elsewhere - is in
+  narrow pytest, the fast stage, an e2e server, a clone kept elsewhere - is in
   [docs/troubleshooting.md](docs/troubleshooting.md#a-gate-waits-for-a-slot).
 
   Reach for `container-pytest` while you are working and `container-verify` before you

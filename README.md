@@ -16,7 +16,8 @@ The files sit at the paths a service repository uses for them.
 | `.claude/hooks/guard-bash.sh`, `.claude/hooks/guard-bash.test.sh` | the guard that holds the rules in `AGENTS.shared.md`, and its tests |
 | `.claude/commands/` | the pre-PR adversarial pass, the end-to-end run and the screenshots |
 | `.claude/settings.json` | the permission allowlist and the hook registration |
-| `scripts/` | the container wrappers, the worktree scripts, the review reader and the CI helpers |
+| `scripts/` | the container wrappers, the worktree scripts, the review reader and the CI helpers, among them the fast local test stage (`scripts/ci/fast_stage.py`) |
+| `tests/` | the Python tests of the scripts that have them: so far the fast stage's |
 | `workflows/` | the shared workflows, to copy into `.github/workflows/` of a service. They are kept here, not in `.github/workflows/`, so that GitHub does not run them in the kit |
 | `.github/actions/` | the apt-install action |
 | `.github/workflows/test.yml` | the kit's own CI: the shell tests, and the Python compiles |
@@ -51,7 +52,11 @@ The shell tests need `sh`, `git`, `flock` and the usual Unix tools:
 
 ```sh
 for t in .claude/hooks/guard-bash.test.sh scripts/*.test.sh scripts/ci/*.test.sh; do sh "$t" || echo "FAILED: $t"; done
+python3 -m pytest tests -q
 ```
+
+`pytest` is the only Python package the tests need. Two tests read the `Makefile` of a service, and skip
+where there is none, as in the kit.
 
 ## License
 

@@ -306,6 +306,12 @@ cmd='make test-coverage'
 once direct_coverage -u DEVKIT_SIZE_WORKERS
 cmd=''
 [ "$(workers_of direct_coverage)" = 1 ] || fail "\`make test-coverage\` is sized for the one worker it uses"
+# the fast stage runs a selection, which waiting behind a gate would cost more than it saves
+cmd='uv run python scripts/ci/fast_stage.py run --base HEAD -- -n 6'
+once direct_fast -u DEVKIT_SIZE_WORKERS
+cmd=''
+[ -z "$(workers_of direct_fast)" ] || fail "the fast stage is not sized"
+[ "$(memory_of direct_fast)" = 6g ] || fail "and keeps the fixed cap"
 cmd='make test PYTEST_WORKERS=2'
 once direct_given -u DEVKIT_SIZE_WORKERS
 cmd=''
@@ -610,7 +616,7 @@ let_go after_stopped
 # a service has a Makefile to read; the kit has none, so this part runs in a service that copied it
 if command -v make >/dev/null 2>&1 && [ -f "$here/../Makefile" ]; then
     targets=$(make -s -n -C "$here/.." container-verify container-verify-fresh container-test \
-        container-test-py314 container-test-coverage container-pytest container-check 2>&1)
+        container-test-py314 container-test-coverage container-pytest container-check container-test-fast 2>&1)
     for t in 'make verify' 'make verify-fresh' 'make test$'; do
         printf '%s\n' "$targets" | grep "scripts/container.sh $t" | grep -q 'DEVKIT_SIZE_WORKERS=6' ||
             fail "\`$t\` runs the whole suite and is sized, up to six workers"
@@ -619,6 +625,10 @@ if command -v make >/dev/null 2>&1 && [ -f "$here/../Makefile" ]; then
         fail "the coverage run is serial, and sized for one worker"
     printf '%s\n' "$targets" | grep -E 'make (pytest|check)' | grep -q 'DEVKIT_SIZE_WORKERS' &&
         fail "a narrow run, or the hooks, are not sized"
+    printf '%s\n' "$targets" | grep -q 'scripts/container.sh uv run python scripts/ci/fast_stage.py run' ||
+        fail "container-test-fast runs the fast stage's script itself, so that its status reaches the caller"
+    printf '%s\n' "$targets" | grep 'fast_stage.py run' | grep -q 'DEVKIT_SIZE_WORKERS' &&
+        fail "the fast stage is not sized"
     off=$(make -s -n -C "$here/.." container-verify container-test-coverage DEVKIT_SIZE_WORKERS=0 2>&1)
     [ "$(printf '%s\n' "$off" | grep -c 'DEVKIT_SIZE_WORKERS=0 ')" -eq 2 ] ||
         fail "DEVKIT_SIZE_WORKERS=0 on the make line turns the sizing off, for coverage too"
