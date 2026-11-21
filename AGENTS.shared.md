@@ -362,7 +362,7 @@ the same rules by reading them.
 ## Changing a file that comes from the kit
 
 Some files in this repository are copies of files in `apache/tooling-devkit`: this one, the guard, the
-commands, the scripts and the shared workflows. A line near the top of each copy says where to change it.
+commands and the scripts. A line near the top of each copy says where to change it.
 Two files cannot carry it, `.claude/settings.json` and `scripts/ci/LICENSE-template.txt`, and the check
 covers them all the same.
 
