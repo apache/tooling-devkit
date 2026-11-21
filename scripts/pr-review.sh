@@ -351,7 +351,7 @@ fi
 # read while `minutes-corpus.yml`'s `paths:` list is out of step with it reads here as
 # every check passing - which is the failure that workflow's own header describes. Catching
 # it would mean knowing which jobs this branch ought to have run, which is a different
-# question from reading what did; `scripts/pr-preflight.sh` is where that one belongs.
+# question from reading what did; a repository's preflight, where it has one, is where that one belongs.
 #
 # The rollup is the head commit's by construction - it hangs off the pull request's own
 # head - so unlike a review it cannot be about code that has since moved.

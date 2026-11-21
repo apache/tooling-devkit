@@ -1,7 +1,7 @@
 # Tooling devkit
 
 The developer files that every Apache Tooling repository shares: the agent rules, the Bash guard, the
-commands, the scripts and the CI workflows. One source, so that a fix made in one repository reaches the
+commands and the scripts. One source, so that a fix made in one repository reaches the
 others instead of drifting. The decision is D-18 in
 [apache/tooling-migration](https://github.com/apache/tooling-migration); the work is tracked in
 [tooling-migration#50](https://github.com/apache/tooling-migration/issues/50).
@@ -18,7 +18,6 @@ The files sit at the paths a service repository uses for them.
 | `.claude/settings.json` | the permission allowlist and the hook registration |
 | `scripts/` | the container wrappers, the worktree scripts, the review reader and the CI helpers, among them the fast local test stage (`scripts/ci/fast_stage.py`) |
 | `tests/` | the Python tests of the scripts that have them: so far the fast stage's |
-| `workflows/` | the shared workflows, to copy into `.github/workflows/` of a service. They are kept here, not in `.github/workflows/`, so that GitHub does not run them in the kit |
 | `.github/actions/` | the apt-install action |
 | `.github/workflows/test.yml` | the kit's own CI: the shell tests, and the Python compiles |
 | `devkit.conf` | the names the shared files read: `DEVKIT_SERVICE`, `DEVKIT_REPOSITORY` |
@@ -59,15 +58,17 @@ variable prefix taken out, and the sync. Not yet here: the Action that opens a s
 job that runs the check in each repository, the extension points for what a repository needs in its own
 form, and `pr-preflight.sh`. See the tracking issue.
 
-What still belongs to tooling-agenda, and has to be made general or taken out:
+CI workflows are not in the kit. The four of tooling-agenda cannot be shared as they are: the runner
+labels, the `subversion` and LDAP packages and the minutes corpus belong to a service, and a workflow
+cannot read `devkit.conf`. Each service keeps its own until there is a way to share them.
 
-- `.claude/settings.json`: `Read(./agenda.yaml)`, and the `make container-minutes-reading` entries.
+What still belongs to tooling-agenda, and has to be made general:
+
+- `.claude/settings.json`: `Read(./agenda.yaml)`, and the `make container-minutes-reading` entries. They
+  stay while there is no way for a service to add to the file, and do no harm in another repository.
 - `scripts/ci/verify.py`: `MINUTES_CORPUS` and the `corpus` stage, and the frontend fixtures under
   `tests/data`.
-- `workflows/`: the ASF runner labels, the `subversion` and LDAP packages, and the reference to
-  `minutes-corpus.yml`.
-- `scripts/Caddyfile`: the ASF OAuth proxy.
-- `scripts/pr-review.sh`: a comment that points at `scripts/pr-preflight.sh`.
+- `AGENTS.shared.md` names the nightly workflow of the behaviour record, which a service has to keep.
 - The variables that no script of the kit reads: the tests and the e2e specs of a service read
   `DEVKIT_E2E_URL`, `DEVKIT_E2E_HOST`, `DEVKIT_BEHAVIOUR_OUT` and others, so a service renames its own at
   the same time as it takes the kit.
