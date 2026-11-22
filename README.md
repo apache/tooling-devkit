@@ -77,16 +77,19 @@ What still belongs to tooling-agenda, and has to be made general:
 
 ## Tests
 
-The shell tests need `sh`, `git`, `flock` and the usual Unix tools:
-
 ```sh
-for t in .claude/hooks/guard-bash.test.sh scripts/*.test.sh scripts/ci/*.test.sh; do sh "$t" || echo "FAILED: $t"; done
-python3 -m pytest tests -q
+make test          # the shell tests, the Python tests, and the scripts of scripts/ci compile and import
+make test-shell
+make test-python
 ```
 
-The tests need `pytest` and `pytest-xdist`: the CI of the kit installs the versions that tooling-agenda locks
-(`pytest==9.1.1`, `pytest-xdist==3.8.0`). Two tests read the `Makefile` of a service, and skip where there
-is none, as in the kit.
+The shell tests need `sh`, `git`, `flock` and the usual Unix tools. The Python setup is `pyproject.toml` and
+`uv.lock`, run by the uv that `.tool-versions` names on the Python of `.python-version`; the CI of the kit
+runs `make test`. The `Makefile`, `pyproject.toml`, `uv.lock` and `.tool-versions` belong to the kit and are
+not in `devkit.files`.
+
+The tests of the kit's scripts stay in the kit. The tests of a service's own files, such as the recipes of its
+`Makefile`, are the service's to keep.
 
 ## License
 

@@ -10,36 +10,23 @@ permissions:
   contents: read
 
 jobs:
-  shell-and-python:
-    name: Shell tests, and the Python compiles
+  tests:
+    name: Tests
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Run the shell tests
-        run: |
-          failed=0
-          for t in .claude/hooks/guard-bash.test.sh scripts/*.test.sh scripts/ci/*.test.sh; do
-              sh "$t" || { echo "FAILED: $t" >&2; failed=1; }
-          done
-          exit "$failed"
       # the scripts use syntax of 3.14; the pin is `.python-version`, as in the services
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version-file: .python-version
-      # the versions agenda's uv.lock holds; the tests of the selection audit run a real `pytest -n 2`
-      - name: Run the Python tests
-        run: |
-          python3 -m pip install --quiet 'pytest==9.1.1' 'pytest-xdist==3.8.0'
-          python3 -m pytest tests -q -rs -p no:cacheprovider
-      - name: Compile the Python, and import what scripts/ci imports
-        run: |
-          python3 -I -m py_compile scripts/ci/*.py
-          cd scripts/ci
-          python3 -I -c "
-          import sys
-          sys.path.insert(0, '.')
-          import behaviour_pulls, behaviour_gate, behaviour_selection, quality_meters, quality_allowances, quality_moves, trailers, bases, changed, verify
-          "
+      # the uv that `.tool-versions` names, as in the services
+      - name: Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version-file: .tool-versions
+      # what runs, and with which packages, is the Makefile, pyproject.toml and uv.lock
+      - name: Run the tests
+        run: make test
