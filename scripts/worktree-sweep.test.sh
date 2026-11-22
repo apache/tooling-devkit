@@ -1,5 +1,4 @@
 #!/bin/sh
-# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # What worktree-sweep.sh calls finished, and - the half that matters - what it must leave alone:
 # anything whose removal could take work nobody committed or something still running, and work
 # that did not reach main. Also the refusals worktree-done.sh holds for every caller.

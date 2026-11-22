@@ -1,5 +1,4 @@
 #!/bin/sh
-# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # What guard-bash.sh refuses, and what it must go on allowing.
 #
 # The second half is the half that matters. A guard that refuses too much is worse than

@@ -1,5 +1,4 @@
 #!/bin/sh
-# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # What pr-review.sh's verdict counts, and what it must not.
 #
 # The verdict is the one line a reader acts on, and every way it has been wrong here has

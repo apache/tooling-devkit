@@ -1,5 +1,4 @@
 #!/bin/sh
-# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # What devkit-sync.sh copies, what it leaves alone, and what its check says.
 #
 # The kit here is a repository made for the run, and DEVKIT_SOURCE names it, so nothing is fetched from

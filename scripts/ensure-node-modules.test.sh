@@ -1,5 +1,4 @@
 #!/bin/sh
-# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # What ensure-node-modules.sh decides, on trees it builds itself.
 #
 # The case that matters is the one the existence check got wrong: node_modules

@@ -341,14 +341,14 @@ is committed under `.claude/`:
 | ---- | ---------- |
 | `.claude/settings.json` | the permission allowlist - the container wrappers and the read-only `git` and `gh` calls, so a session does not stall waiting to be told it may run `git log` - and the hook registration |
 | `.claude/hooks/guard-bash.sh` | refuses a command that runs the toolchain on the host, stages with a wildcard - `git add -A`, the `-a` that spells it on the commit, or a list a command printed, `git add $(git diff --name-only)` - reaches into the shared stash, passes `--no-verify`, or posts an issue or pull request body that does not say who wrote it |
-| `.claude/hooks/guard-bash.test.sh` | what the guard refuses, and - the half that matters - what it must go on allowing. Run by `make check` |
 | `.claude/commands/adversarial.md` | the prompt the pre-PR pass is given, and the classes it attacks |
 
 The guard stands down inside the dev container, where running `uv` and `yarn` is
 the whole idea. Where `DEVKIT_ISOLATED=1` is set it stands down for the toolchain
 rules only. If it refuses something this repository actually asks for, that
-is a bug in the guard: add the case to the test and fix it in the kit (below) rather
-than working around it.
+is a bug in the guard: add the case to the kit's guard test - what it refuses, and the half
+that matters, what it must go on allowing - and fix it in the kit (below) rather than
+working around it.
 
 Whatever else lands in `.claude/` stays ignored - a session's own approvals
 accrue in `settings.local.json`, and its linked worktree lives under
