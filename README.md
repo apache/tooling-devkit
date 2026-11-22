@@ -58,9 +58,12 @@ variable prefix taken out, and the sync. Not yet here: the Action that opens a s
 job that runs the check in each repository, the extension points for what a repository needs in its own
 form, and `pr-preflight.sh`. See the tracking issue.
 
-CI workflows are not in the kit. The four of tooling-agenda cannot be shared as they are: the runner
-labels, the `subversion` and LDAP packages and the minutes corpus belong to a service, and a workflow
-cannot read `devkit.conf`. Each service keeps its own until there is a way to share them.
+CI workflows are not in the kit. Dependabot updates the pinned actions in the `.github/workflows/` of each
+repository, so a copy of a kit workflow would differ from the kit after every update, and the drift check
+would fail. The four workflows of tooling-agenda also hold what belongs to one service: the `subversion`
+and LDAP packages and the minutes corpus, which a workflow cannot take from `devkit.conf`. The ASF runner
+labels are only tooling-agenda's, because it is private; the public repositories use hosted runners. Each
+service keeps its own workflows until there is a way to share them.
 
 What still belongs to tooling-agenda, and has to be made general:
 
