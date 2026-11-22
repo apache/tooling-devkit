@@ -18,7 +18,7 @@ fail() {
 }
 
 # What is the kit's own and is not taken by a service.
-kit_only='.asf.yaml .gitignore .python-version .github/workflows/test.yml LICENSE README.md devkit.conf devkit.files scripts/devkit-files.test.sh'
+kit_only='.asf.yaml .gitignore .python-version .github/dependabot.yml .github/workflows/test.yml LICENSE README.md devkit.conf devkit.files scripts/devkit-files.test.sh'
 # What cannot carry the line that says where to change it: JSON and a license template have no comment.
 no_header='.claude/settings.json scripts/ci/LICENSE-template.txt'
 marker='Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.'
