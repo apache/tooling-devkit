@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # How container.sh sizes a run of the whole suite, and the gate slots that keep concurrent runs from
 # asking the machine for more memory than it has (scripts/container-size.sh).
 #

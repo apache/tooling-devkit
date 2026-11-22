@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # Run a command against the working tree inside the project's dev container.
 #
 # Everything in this repository builds and tests inside a container (see

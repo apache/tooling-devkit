@@ -1,3 +1,4 @@
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # The runner Copilot's code review runs on.
 #
 # Without this file the review falls back to `ubuntu-latest`, which is billed through the

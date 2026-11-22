@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # Put the screenshots an end-to-end run captured somewhere a pull request can show them.
 #
 #   scripts/pr-screenshots.sh 621 e2e/screenshots/home.png e2e/screenshots/report.png

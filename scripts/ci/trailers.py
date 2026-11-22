@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 """What the commits a branch adds say about themselves in their trailers.
 
 Two checks read one: the quality ratchet (`Quality-Allow:`) and the minutes reading

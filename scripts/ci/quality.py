@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 """The quality ratchet: measure what is hard to maintain, and let it only get better.
 
 The codebase already exceeds every threshold worth setting, so setting them outright

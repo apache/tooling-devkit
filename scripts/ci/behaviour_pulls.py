@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 """What the pull requests merged as main's commits allowed, for a full comparison to read.
 
     GH_TOKEN=... uv run scripts/ci/behaviour_pulls.py --ref <base>

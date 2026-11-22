@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 """Which parts of the behaviour record a change can reach (`scripts/ci/behaviour.py`).
 
 A part's modules are what it ran, as `tests/behaviour/executed.py` noted them. A change reaches a part

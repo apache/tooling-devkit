@@ -1,0 +1,62 @@
+# The files a service may take from the kit. One to a line: `path`, or `source destination` where the
+# service keeps it somewhere else. Everything the kit holds that is not listed here is the kit's own.
+# A service leaves out what it keeps as its own with DEVKIT_SKIP in its devkit.conf.
+
+.claude/commands/adversarial.md
+.claude/commands/e2e.md
+.claude/commands/screenshots.md
+.claude/hooks/guard-bash.sh
+.claude/hooks/guard-bash.test.sh
+.claude/settings.json
+.github/actions/apt-install/action.yml
+AGENTS.shared.md
+scripts/Caddyfile
+scripts/checkout-id.sh
+scripts/checkout-resources.sh
+scripts/ci/LICENSE-template.txt
+scripts/ci/apt-install.sh
+scripts/ci/apt-mirror.sh
+scripts/ci/apt-mirror.test.sh
+scripts/ci/bases.py
+scripts/ci/behaviour.py
+scripts/ci/behaviour_gate.py
+scripts/ci/behaviour_pulls.py
+scripts/ci/behaviour_selection.py
+scripts/ci/changed.py
+scripts/ci/fast_stage.py
+scripts/ci/fast_stage_record.py
+scripts/ci/production_import.py
+scripts/ci/quality.py
+scripts/ci/quality_allowances.py
+scripts/ci/quality_meters.py
+scripts/ci/quality_moves.py
+scripts/ci/trailers.py
+scripts/ci/verify.py
+scripts/container-gc.sh
+scripts/container-size.sh
+scripts/container-size.test.sh
+scripts/container.sh
+scripts/container.test.sh
+scripts/devkit-sync.sh
+scripts/devkit-sync.test.sh
+scripts/e2e-container.sh
+scripts/e2e-typecheck.sh
+scripts/ensure-node-modules.sh
+scripts/ensure-node-modules.test.sh
+scripts/pr-review.sh
+scripts/pr-review.test.sh
+scripts/pr-screenshots.sh
+scripts/run-dev.sh
+scripts/run-preview.sh
+scripts/run.sh
+scripts/seed-volumes.sh
+scripts/worktree-cleanup.test.sh
+scripts/worktree-done.sh
+scripts/worktree-held.sh
+scripts/worktree-sweep.sh
+scripts/worktree-sweep.test.sh
+tests/test_fast_stage.py
+workflows/analyze.yml .github/workflows/analyze.yml
+workflows/behaviour-full.yml .github/workflows/behaviour-full.yml
+workflows/build.yml .github/workflows/build.yml
+workflows/copilot-code-review.yml .github/workflows/copilot-code-review.yml

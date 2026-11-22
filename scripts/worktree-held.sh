@@ -1,4 +1,5 @@
 #!/bin/sh
+# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 # What in a worktree is somebody's own although `git status` does not show it, so that removing the
 # worktree would take it: worktree-sweep.sh keeps such a worktree, and worktree-done.sh refuses it.
 #

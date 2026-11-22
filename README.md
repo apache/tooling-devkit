@@ -22,16 +22,42 @@ The files sit at the paths a service repository uses for them.
 | `.github/actions/` | the apt-install action |
 | `.github/workflows/test.yml` | the kit's own CI: the shell tests, and the Python compiles |
 | `devkit.conf` | the names the shared files read: `DEVKIT_SERVICE`, `DEVKIT_REPOSITORY` |
+| `devkit.files` | the files a service may take, with where each goes; the rest is the kit's own |
+| `scripts/devkit-sync.sh` | copies those files at a commit, and checks that a copy is still as the kit has it |
 
 A service repository has a `devkit.conf` of its own. The variables the shared files read start with
 `DEVKIT_`, and the image, volume and container names take the service name from `devkit.conf`. Some files
 still carry what belongs to tooling-agenda: see "Status".
 
+## Taking the kit
+
+A service repository keeps its own `devkit.conf` and `devkit.lock`. The first copy of
+`scripts/devkit-sync.sh` is made by hand; after that:
+
+```sh
+scripts/devkit-sync.sh <ref>      # a branch, a tag or a full commit id of the kit: copy the files, write the commit to devkit.lock
+scripts/devkit-sync.sh --check                          # compare them with the kit at that commit
+```
+
+Nothing is committed for you. A repository that keeps a file as its own names it in `DEVKIT_SKIP` in
+`devkit.conf`, paths separated by spaces. A copy that differs on purpose, for a time, goes in
+`devkit.lock` with its issue and the day it ends:
+
+```text
+commit 0123456789abcdef0123456789abcdef01234567
+override scripts/e2e-container.sh tooling-agenda#1142 until 2026-12-31
+```
+
+The sync leaves an overridden file as it is, and the check prints each override and fails after its day.
+`DEVKIT_SOURCE` names another place to fetch the kit from, which the tests use. A change to a copied file
+is a pull request in the kit: see "Changing a file that comes from the kit" in `AGENTS.shared.md`.
+
 ## Status
 
 This is the first version. It holds the files as tooling-agenda has them, with the service name and the
-variable prefix taken out. Not yet here: the sync script, `devkit.lock`, the drift check, the extension
-points for what a repository needs in its own form, and `pr-preflight.sh`. See the tracking issue.
+variable prefix taken out, and the sync. Not yet here: the Action that opens a sync pull request, the CI
+job that runs the check in each repository, the extension points for what a repository needs in its own
+form, and `pr-preflight.sh`. See the tracking issue.
 
 What still belongs to tooling-agenda, and has to be made general or taken out:
 
