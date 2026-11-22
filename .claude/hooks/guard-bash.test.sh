@@ -843,10 +843,9 @@ allow 'gh pr comment 800 --body-file "$BODY_FILE"'
 # one switched the rule off for "costs $5 a month" and "echo exit=$?", which is most of the
 # prose here. The narrower wrong is refusing this shape.
 refuse "gh pr comment 800 --body \"\$(cat $signed)\""
-# `gh api` is not covered, and these record that rather than leaving it to be discovered. It
-# reaches the same comments and is the only way one is edited, so the gap is real - it is filed
-# rather than closed here, because writing that branch cost three of the five defects this rule
-# was reviewed for. See #809.
+# `gh api` is not covered, and these record that. It reaches the same comments and is the only way
+# one is edited, so the gap is real: the branch that would close it is hard to write without
+# confusing a command with text that looks like one.
 allow "gh api -X PATCH repos/a/b/issues/comments/1 -F body=@$signed"
 allow "gh api -X PATCH repos/a/b/issues/comments/1 -F body=@$unsigned"
 # reading through those same paths is most of what the api is used for here, and stays allowed

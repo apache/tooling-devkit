@@ -7,9 +7,9 @@
 # anyway and passes for as long as the wrongness does not happen to throw.
 #
 # It does not catch a deliberate `as unknown as` - a double assertion beats any checker,
-# which is why the one on #729 needed a reviewer rather than a tool. It catches the
+# which is why that one takes a reviewer rather than a tool. It catches the
 # commoner ways: a name misspelt in a typed position (TS2820), an untyped parameter that
-# silently unchecks every call made on it (TS7006 - there were nine), an index that might
+# silently unchecks every call made on it (TS7006), an index that might
 # be `undefined` (TS18048), and a binding nothing reads (TS6133).
 #
 # Seconds rather than minutes: no application container, no browser, nothing served. The

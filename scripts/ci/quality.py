@@ -341,7 +341,7 @@ def _nothing_compared(result: CheckResult) -> str:
     """What to do about a run that compared nothing, which is not a pass and may not read as one.
 
     A checkout with no base readings answered "Every meter that was checked is at or better than
-    the base" - true, and true of nothing - and #814 was pushed on it and failed in CI.
+    the base" - true, and true of nothing.
 
     Which of the two reasons it was decides the remedy: a meter with no base wants
     `quality-base`, and one whose report is missing wants the suite that produces it. Naming the
@@ -389,7 +389,7 @@ def _print_check(result: CheckResult) -> None:
         print(_nothing_compared(result))
     elif result["unchecked"]:
         # The note above goes to stderr and is read past; this line is the answer taken away,
-        # and "every meter" over seven of nine is how #785 read green locally and failed in CI.
+        # and "every meter" over seven of nine reads green locally and fails in CI.
         # Each meter says why it was not read: a missing report is one CI supplies by running
         # the suite, while a missing base reading is one CI may have skipped as well.
         print("\nEvery meter that was checked is at or better than the base.")

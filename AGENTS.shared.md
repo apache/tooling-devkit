@@ -156,8 +156,7 @@ variables the scripts read all start with `DEVKIT_`.
   next door may be in it. The script's header has the full list, and
   `worktree-done.sh` refuses the same things when run by hand. Everything else is listed with the reason it stays. A worktree kept
   for changes after its work merged is usually a draft from before a rebase: look
-  before you force it. On 2026-11-10 seventy had piled up, most of them finished
-  months before.
+  before you force it.
 
   Before a change that moves a lot of code — a split, an extraction, a rename
   across a module — find out who else is in it. Ask about **every file the branch
@@ -185,15 +184,13 @@ variables the scripts read all start with `DEVKIT_`.
   ```
 
   Neither loop sees a local branch whose work is committed and unpushed. `refs/heads`
-  beside `refs/remotes/origin` finds those, and on a wide file list it names most of the
-  seventy branches this repository carries — 79 for one touching 40 files, against 5
-  from the remote alone. Add it when the list is narrow.
+  beside `refs/remotes/origin` finds those. On a wide file list it names most of the
+  branches there are, so add it when the list is narrow.
 
   Taking the list from the branch rather than naming a path is the point. A split
   edits the file it is about and leaves an import line in every consumer, and it is
-  those that collide: tooling-agenda#785 was scanned for the two files it was restructuring,
-  came back clear, and still landed a conflict onto somebody else's branch through
-  a component it had only added an import to.
+  those that collide: a scan for the two files being restructured comes back clear, and the
+  conflict still lands on somebody else's branch through a component that only gained an import.
 
   `${mine:?}` rather than `$mine` because an empty list is not an empty
   question: with no pathspec left, `git diff` matches every file and the scan
@@ -322,11 +319,10 @@ variables the scripts read all start with `DEVKIT_`.
   dispatch takes a base to compare a commit about to be promoted against.
 - **Show a new assertion failing before you trust it.** Run it against the code
   as it was before your change, and put what it reported in the pull request. A
-  test that has only ever passed has not been shown to test anything, and this
-  repository has shipped three that tested nothing: `0 < 30` against a card
-  inside a hidden pane (tooling-agenda#705), the same line reading `13.2 < 30` once the card
-  was visible but the rule still wrong (tooling-agenda#729), and a property list cast in a way
-  that made every name compile to the same one. All three were green. Assert the
+  test that has only ever passed has not been shown to test anything: `0 < 30`
+  against a card inside a hidden pane is green, `13.2 < 30` is green once the card
+  is visible but the rule is still wrong, and so is a property list cast in a way
+  that makes every name compile to the same one. Assert the
   rule, not a bound on it — `height < 30` says a heading is no longer set as a
   heading, and says nothing about whether it is set as a label.
 - **`uv.lock` is the source of truth for Python dependencies.**
@@ -459,11 +455,9 @@ request, the CI job that runs the check in each repository, and the extension po
   one that never happened.
 
   It earns its place on the shape of what it finds rather than on a count, which
-  goes stale: tooling-agenda#836 had round after round of bot review, each finding something
-  real, and one adversarial pass afterwards still found a button that read "Add 6
-  meetings" and committed twenty-four, a rollback that deleted a special meeting
-  the calendar already held, and three of that branch's own tests that could not
-  fail.
+  goes stale: after round after round of bot review, one adversarial pass still found a
+  button whose label promised six items and committed twenty-four, a rollback that
+  deleted a row it never added, and tests that could not fail.
 
 - **Read a review with `scripts/pr-review.sh <pr>`, not by eye.** It prints every
   round, the newest review in full, every `Suppressed comments` block from every
@@ -472,7 +466,7 @@ request, the CI job that runs the check in each repository, and the extension po
   commit, when a thread is unanswered, and when a check failed, has not finished,
   or never ran. Your own reviews do not count towards that: replying to a thread
   posts a review, so answering a finding would otherwise mark the head as
-  reviewed by the act of answering — which is what happened on tooling-agenda#838.
+  reviewed by the act of answering.
 
   The checks are read here for the same reason the suppressed blocks are. `gh pr
   checks` prints nothing when there is nothing to print, and nothing is what a
@@ -495,7 +489,7 @@ request, the CI job that runs the check in each repository, and the extension po
   nothing, which reads exactly like a review with no findings.
 
   A review also does not have to be a review: a comment on the conversation is
-  none of the above, and on tooling-agenda#751–tooling-agenda#753 it was where every finding was, under a
+  none of the above, and it can be where every finding is, under a
   correct "did not run" and a correct "0 unresolved". Those are printed too, and
   they are the one section the exit status says nothing about — a comment records
   nowhere whether it was answered, so the script counts them and leaves the
@@ -504,9 +498,9 @@ request, the CI job that runs the check in each repository, and the extension po
   Answer a finding you decline where the next reader will find it — in the PR, or
   in the commit that declines it.
 - **A review is tied to a commit, so re-request it after every push**, and do not
-  read a clean round as a verdict. tooling-agenda#729 had three reviews of one commit: the
-  first two found nothing and the third found a real defect in that same
-  unchanged code. One clean round means nothing was found this time.
+  read a clean round as a verdict. Three reviews of one commit can find nothing twice and a
+  real defect, in the same unchanged code, the third time. One clean round means nothing was
+  found this time.
   [docs/troubleshooting.md](docs/troubleshooting.md) has the two ways of asking
   for a review that look right and are not.
 - **User-facing UI features must include screenshot(s) in the PR.** Capture them
@@ -542,8 +536,8 @@ request, the CI job that runs the check in each repository, and the extension po
 A comment from a session goes up under somebody's account, and is read by
 colleagues.
 
-- **Answer what was asked, and stop.** tooling-agenda#796 asked for one file and got a whole
-  data model back: "please do not conflate this with tooling-agenda#773".
+- **Answer what was asked, and stop.** A question about one file does not get a whole data model
+  back.
 - **Write in [ASD-STE100](https://www.asd-ste100.org/) (Simplified Technical
   English).** This rule applies to pull request descriptions, to comments on issues
   and pull requests, and to commit messages. Use these rules:
@@ -555,8 +549,7 @@ colleagues.
   - Use one word for one thing. Do not use a different word for variety.
   - Do not use idioms or figurative language.
 
-  Code comments, `docs/` and the AGENTS files keep their current style. tooling-agenda#964 is
-  about these.
+  Code comments, `docs/` and the AGENTS files keep their current style.
 - **The account holder approves the text first.** They answer the reply, and a
   comment cannot be unsent.
 - **Say who wrote it**, on a line of its own at the end - the agent by name, and
@@ -564,7 +557,7 @@ colleagues.
   posts a body without it.
 
   ```text
-  Posted by Claude on behalf of @sstriker
+  Posted by Claude on behalf of @<github-username>
   ```
 
   [Apache Magpie](https://github.com/apache/magpie) does the same for an

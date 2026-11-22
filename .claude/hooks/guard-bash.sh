@@ -73,9 +73,9 @@ fi
 payload=$(cat)
 
 # The body of a heredoc is data. The shell will not execute it - a quoted `<<'MD'` is not
-# even expanded - so nothing in there is a command, and reading it as one refused an issue
-# body that quoted `uv run ...` in a fenced example. The fix each time was to write the
-# file with a different tool, which is the one habit a guard cannot afford to teach (#701).
+# even expanded - so nothing in there is a command. Reading it as one refuses an issue body
+# that quotes `uv run ...` in a fenced example, and teaches the one habit a guard cannot
+# afford to teach: writing the file with a different tool.
 #
 # The line that opens the heredoc is kept, because the command on it is real, and so is
 # everything after the terminator: `uv run ...` before or after a heredoc is still uv on
@@ -627,8 +627,8 @@ ATTRIBUTION="^Posted by .+ on behalf of @[A-Za-z0-9][A-Za-z0-9-]*"
 #
 # Counted as the parts are read rather than by looking for the command in the text. Text is not
 # a command: a comment explaining how to reply, quoting `gh issue comment` on a line of its own,
-# was counted as a second post and the whole - correctly signed - call refused. It is the same
-# mistake as reading a heredoc body as commands (#701), and `check_line` walks the parts in this
+# is not a second post, and refusing the whole - correctly signed - call for it would be wrong. It
+# is the same mistake as reading a heredoc body as commands, and `check_line` walks the parts in this
 # shell, so counting where they are dispatched costs nothing and cannot see prose.
 _posts_seen=0
 
@@ -685,9 +685,8 @@ signed_off() {
 # file its own words happened to name.
 #
 # What a path arrives wrapped in is not part of it: `--body-file "/tmp/c.md"` keeps the shell's
-# quotes, and was tested with them still attached - so a file that was there and signed read as
-# a file that was not there at all. Every occurrence rather than the last one on a line, which is
-# what the sed this replaced quietly did.
+# quotes, and a path tested with them still attached reads a file that is there and signed as a
+# file that is not there at all. Every occurrence is taken, not the last one on a line.
 #
 # Matched rather than split into fields, because a quoted path may have a space in it and fields
 # end at one: `--body-file "/tmp/some dir/body.md"` was read as `"/tmp/some` and reported missing.
@@ -734,10 +733,9 @@ check_gh() {
         esac
     done
     case "${1:-} ${2:-}" in
-        # `gh api` reaches the same comments, and is the only way one is edited. It is not here:
-        # writing that branch cost three of the five defects this rule was reviewed for, in a
-        # guard whose whole difficulty is telling a command from text that looks like one. The
-        # gap is real and is filed rather than left implied - see #809.
+        # `gh api` reaches the same comments, and is the only way one is edited. It is not covered:
+        # that branch is hard to write without confusing a command with text that looks like one.
+        # The gap is known.
         'issue comment' | 'issue create' | 'issue edit' | 'pr comment' | 'pr create' | 'pr edit' | 'pr review') : ;;
         *) return 0 ;;
     esac
@@ -1416,10 +1414,10 @@ split_on_separators() {
                     esac
                     ;;
                 # `(` and `)` group commands, so they end one as surely as `;` does. Left in
-                # place they welded the bracket onto the word beside it: `(git add -A)` was
-                # one command whose first word was `(git`, which is not `git`, so the staging
-                # rule never looked at it - and `(... && make e2e-typecheck)` was refused,
-                # because `e2e-typecheck)` is not a target this repository has.
+                # place they weld the bracket onto the word beside it: `(git add -A)` is one
+                # command whose first word is `(git`, which is not `git`, so the staging rule
+                # never looks at it - and `(... && make e2e-typecheck)` is refused, because
+                # `e2e-typecheck)` is not a target name.
                 ';' | '|' | '(' | ')') _char=$_newline ;;
                 *) : ;;
             esac

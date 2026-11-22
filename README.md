@@ -34,8 +34,8 @@ A service repository keeps its own `devkit.conf` and `devkit.lock`. The first co
 `scripts/devkit-sync.sh` is made by hand; after that:
 
 ```sh
-scripts/devkit-sync.sh <ref>      # a branch, a tag or a full commit id of the kit: copy the files, write the commit to devkit.lock
-scripts/devkit-sync.sh --check                          # compare them with the kit at that commit
+scripts/devkit-sync.sh <ref>    # copy the files at <ref>, a branch, a tag or a full commit id, and write the commit to devkit.lock
+scripts/devkit-sync.sh --check  # compare them with the kit at that commit
 ```
 
 Nothing is committed for you. A repository that keeps a file as its own names it in `DEVKIT_SKIP` in
@@ -44,7 +44,7 @@ Nothing is committed for you. A repository that keeps a file as its own names it
 
 ```text
 commit 0123456789abcdef0123456789abcdef01234567
-override scripts/e2e-container.sh tooling-agenda#1142 until 2026-12-31
+override scripts/e2e-container.sh tooling-service#12 until 2026-12-31
 ```
 
 The sync leaves an overridden file as it is, and the check prints each override and fails after its day.
@@ -53,10 +53,9 @@ is a pull request in the kit: see "Changing a file that comes from the kit" in `
 
 ## Status
 
-This is the first version. It holds the files as tooling-agenda has them, with the service name and the
-variable prefix taken out, and the sync. Not yet here: the Action that opens a sync pull request, the CI
-job that runs the check in each repository, the extension points for what a repository needs in its own
-form, and `pr-preflight.sh`. See the tracking issue.
+The files come from tooling-agenda, with the service name and the variable prefix taken out. Not in the kit
+yet: the Action that opens a sync pull request, the CI job that runs the check in each repository, the
+extension points for what a repository needs in its own form, and `pr-preflight.sh`. See the tracking issue.
 
 CI workflows are not in the kit. Dependabot updates the pinned actions in the `.github/workflows/` of each
 repository, so a copy of a kit workflow would differ from the kit after every update, and the drift check

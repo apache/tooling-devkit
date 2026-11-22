@@ -21,9 +21,9 @@
 Meters key on where a finding is - a path, or a path and what was found in it - which is
 what lets a new key mean new code that has to meet the bar outright. It is also the one
 thing that could make that lie: both halves of a move leave the same shape behind as an
-arrival, a key with no base reading. Renaming a 600-line file used to go red on every
-meter that keys on its path, and the only way through was a `Quality-Allow:` trailer
-whose subject argued for a regression that had not happened.
+arrival, a key with no base reading. Without this, renaming a 600-line file goes red on every
+meter that keys on its path, and the only way through is a `Quality-Allow:` trailer
+whose subject argues for a regression that has not happened.
 
 Two answers, deliberately unequal in what they are willing to assume.
 

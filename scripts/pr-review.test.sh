@@ -221,15 +221,15 @@ round 2026-01-01T11:00:00Z copilot-pull-request-reviewer COMMENTED "$HEAD_SHA" 1
     'The job was not started because recent GitHub Actions payments have failed'
 expect 'a round that did not run is not a clean round' 1 'did not run'
 
-# Copilot's other way of not running, word for word as it was posted on #682, #808, #880,
-# #950, #951 and #953: a review on the head commit, no threads, and nothing read.
+# Copilot's other way of not running, word for word as it is posted: a review on the head
+# commit, no threads, and nothing read.
 new_case
 round 2026-01-01T11:00:00Z copilot-pull-request-reviewer COMMENTED "$HEAD_SHA" 1 \
     'Copilot encountered an error and was unable to review this pull request. You can try again by re-requesting a review.'
 expect 'a round that errored is not a clean round' 1 'did not run'
 
-# And a third, word for word as it was posted on #1009 and #1013: refused for the
-# requester's quota, again a review on the head commit with no threads.
+# And a third, word for word as it is posted: refused for the requester's quota, again a
+# review on the head commit with no threads.
 new_case
 round 2026-01-01T11:00:00Z copilot-pull-request-reviewer COMMENTED "$HEAD_SHA" 1 \
     'Copilot was unable to review this pull request because the user who requested the review has insufficient remaining quota. Try requesting a review at a lower effort level.'

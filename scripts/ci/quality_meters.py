@@ -74,11 +74,9 @@ MAX_COGNITIVE = 15
 MAX_LINES = 500
 
 # What a file carved out of another costs in lines whatever is in it: the license header, a
-# module docstring, and the imports it no longer shares with the file it left. Measured on
-# this tree as the lines before the first definition - 49 in draft_resolutions.py, 67 in
-# minutes_index.py, 73 in minutes_snapshot.py. #777 freed 266 lines from edit_agenda.py and
-# the file that arrived was 315, which is that preamble and nothing else. Eighty covers
-# them, and is too small to hide a function in.
+# module docstring, and the imports it no longer shares with the file it left. Measured as the
+# lines before the first definition of files carved out of larger ones: between 49 and 73.
+# Eighty covers them, and is too small to hide a function in.
 SPLIT_PREAMBLE = 80
 
 # Coverage is not reproducible to the last decimal: the same suite measured under a
