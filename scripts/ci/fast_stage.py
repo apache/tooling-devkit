@@ -70,7 +70,7 @@ TIER0_MAX_SECONDS: Final = 15.0
 """Tier 0 is for the cheap ones; a snapshot test is kept whatever it costs, since nothing else reaches it."""
 
 SECONDS_PER_TEST: Final = 0.7
-"""What a test is taken to cost before any run has recorded one: the suite's mean in the 2026-11 profile."""
+"""What a test is taken to cost before any run has recorded one: about the suite's mean."""
 
 BROAD_PACKAGES: Final = frozenset({"api", "models", "actions", "md"})
 """Packages whose tests are too many for a change to one module to select them all."""

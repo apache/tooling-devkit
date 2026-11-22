@@ -12,10 +12,10 @@
 # after itself. yarn does not: it installs when asked and not otherwise, so
 # something here has to decide when to ask.
 #
-# What it used to ask was whether node_modules held a state file at all. That is
+# Asking whether node_modules holds a state file at all is not enough. That is
 # true of a volume seeded from another checkout - seed_volume copies the state
 # file along with everything else - so a worktree whose branch pinned a
-# dependency the seed did not have never installed it, and said so as a
+# dependency the seed did not have never installs it, and says so as a
 # type-check failure several layers down:
 #
 #     Error: Cannot find module '@testing-library/svelte'

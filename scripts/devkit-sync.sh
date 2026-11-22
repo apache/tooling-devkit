@@ -18,7 +18,7 @@
 # the first, and refuses a kit that lists either. The other lines of devkit.lock are kept:
 #
 #   commit 0123456789abcdef0123456789abcdef01234567
-#   override scripts/e2e-container.sh tooling-agenda#1142 until 2026-12-31
+#   override scripts/e2e-container.sh tooling-service#12 until 2026-12-31
 #
 # An override says that this copy differs from the kit on purpose: with its issue, and the day it ends.
 # The sync leaves an overridden file as it is, and the check lets it differ until that day.

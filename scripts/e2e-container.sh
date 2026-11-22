@@ -217,7 +217,7 @@ else
         # The supervisor boots the application itself and additionally listens on
         # SUPERVISOR_PORT for a per-spec-file POST /restart (see e2e/supervisor.py):
         # kill the app, throw away its state directory, boot a clean one. Without it
-        # every spec in the run shares one server - see issue #594.
+        # every spec in the run shares one server.
         exec uv run python e2e/supervisor.py
     ' >/dev/null
 fi

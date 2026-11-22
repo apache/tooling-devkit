@@ -54,7 +54,7 @@
 
 # --- The constants, and the runs they were read from ----------------------------------------
 #
-# Read from whole `make verify` runs of #1150 on a 16-core, 15 GiB WSL2 machine with Podman, the
+# Read from whole `make verify` runs on a 16-core, 15 GiB WSL2 machine with Podman, the
 # container sampled every two seconds (memory.stat anon, and memory.peak, which counts page cache):
 #
 #   workers  cap   passed  peak                                   memory(w) here

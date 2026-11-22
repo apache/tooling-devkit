@@ -25,7 +25,8 @@
 A pull request's own comparison reads the trailers on its own commits. A full comparison reads main's,
 and a squash merge made with GitHub's "commit messages" default joins every commit's message into one:
 each `Behaviour-Allow:` line lands mid-message, where git does not read it as a trailer. So main's
-history allows nothing the pull request allowed, and the nightly failed on #1103's records (#1115).
+history allows nothing the pull request allowed, and a nightly comparison fails on the records of any change that
+needed an allowance.
 
 For each commit on HEAD's first-parent line since the merge base of `--ref` and HEAD, GitHub says which
 pull request was merged as it (`commits/{sha}/pulls`). One counts only where it was merged into main and
@@ -99,7 +100,7 @@ REPOSITORY: Final = os.environ.get("GITHUB_REPOSITORY") or _conf(
 API: Final = os.environ.get("GITHUB_API_URL", "https://api.github.com")
 SERVER: Final = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
 MERGED_AS: Final = re.compile(r"\(#(\d+)\)$")
-"""The subject GitHub gives a squash merge, and the title of a pull request it merges: `... (#1103)`."""
+"""The subject GitHub gives a squash merge, and the title of a pull request it merges: `... (#123)`."""
 
 
 class UnreadableError(Exception):

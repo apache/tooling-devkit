@@ -56,7 +56,3 @@ scripts/worktree-held.sh
 scripts/worktree-sweep.sh
 scripts/worktree-sweep.test.sh
 tests/test_fast_stage.py
-workflows/analyze.yml .github/workflows/analyze.yml
-workflows/behaviour-full.yml .github/workflows/behaviour-full.yml
-workflows/build.yml .github/workflows/build.yml
-workflows/copilot-code-review.yml .github/workflows/copilot-code-review.yml
