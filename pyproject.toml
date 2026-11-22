@@ -1,0 +1,25 @@
+# The Python setup of the kit's own tests. A kit-only file: a service has its own, and
+# `devkit.files` does not list this one.
+[project]
+name = "tooling-devkit"
+version = "0.0.0"
+description = "Developer files shared by the Apache Tooling repositories"
+license = "Apache-2.0"
+requires-python = ">=3.14"
+dependencies = []
+
+# What the tests need and nothing else: the scripts under test use the standard library, and
+# pytest-xdist is there because the tests of the selection audit run a real `pytest -n 2`.
+[dependency-groups]
+test = [
+    "pytest>=9.1.1",
+    "pytest-xdist>=3.8",
+]
+
+[tool.uv]
+required-version = ">=0.12.2"
+package = false
+default-groups = ["test"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

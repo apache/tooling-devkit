@@ -807,21 +807,4 @@ def test_vitest_runs_after_pytest_passes_and_its_failure_is_the_stages(
     assert (repo / "vitest-ran").read_text() == "x\n"
 
 
-@pytest.mark.parametrize(("target", "half"), [("test-python", "python"), ("test-frontend", "frontend")])
-def test_a_full_run_of_a_half_clears_its_last_note_before_it_begins(target: str, half: str) -> None:
-    """`begin` may fail without stopping the run - `uv run` can fail before Python starts - and `passed`
-    would then mark the last run's note, and take a commit whose run failed as green. Each half's recipe
-    removes its note first, with a line whose failure does stop it, and marks it only after the run."""
-    makefile_path = _CI.parent.parent / "Makefile"
-    if not makefile_path.exists():
-        pytest.skip("the kit has no Makefile: a service that copies this test reads its own")
-    makefile = makefile_path.read_text(encoding="utf-8").splitlines()
-    recipe = makefile[makefile.index(f"{target}:") + 1 :]
-    recipe = recipe[: next(i for i, line in enumerate(recipe) if not line.startswith("\t"))]
-    begin = next(i for i, line in enumerate(recipe) if f"$(FAST_STAGE) begin {half}" in line)
-    clears = [i for i, line in enumerate(recipe[:begin]) if f"rm -f state/fast-stage/{half}.json" in line]
-    marks = [i for i, line in enumerate(recipe) if f"$(FAST_STAGE) passed {half}" in line]
-
-    assert clears, f"no line before `begin` removes state/fast-stage/{half}.json"
-    assert not recipe[clears[0]].lstrip("\t").startswith("-")
-    assert marks == [len(recipe) - 1], "`passed` is not the last line, after the run"
+# The recipes of a service's Makefile that call the fast stage are the service's to test.
