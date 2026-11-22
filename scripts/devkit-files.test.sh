@@ -17,8 +17,9 @@ fail() {
     failures=$((failures + 1))
 }
 
-# What is the kit's own and is not taken by a service.
-kit_only='.asf.yaml .gitignore .python-version .tool-versions Makefile pyproject.toml uv.lock .github/dependabot.yml .github/workflows/test.yml LICENSE README.md devkit.conf devkit.files scripts/devkit-files.test.sh'
+# What is the kit's own and is not taken by a service. Besides these, every test of the kit's is its
+# own: the kit's CI runs them, and a service has no use for a copy (see the README).
+kit_only='.asf.yaml .gitignore .python-version .tool-versions Makefile pyproject.toml uv.lock .github/dependabot.yml .github/workflows/test.yml LICENSE README.md devkit.conf devkit.files'
 # What cannot carry the line that says where to change it: JSON and a license template have no comment.
 no_header='.claude/settings.json scripts/ci/LICENSE-template.txt'
 marker='Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.'
@@ -41,8 +42,15 @@ done
 [ -z "$(printf '%s\n' "$sources" | sort | uniq -d)" ] || fail "devkit.files lists a source twice"
 [ -z "$(printf '%s\n' "$destinations" | sort | uniq -d)" ] || fail "devkit.files lists a destination twice"
 
-# every file the kit holds is listed, or the kit's own
+# every file the kit holds is listed, or the kit's own; a test of the kit's is never listed
 for path in $(git ls-files); do
+    case $path in
+        *.test.sh | tests/*)
+            printf '%s\n' "$sources" | grep -q -x -F -- "$path" && fail "$path is a test of the kit's, and is listed"
+            continue
+            ;;
+        *) : ;;
+    esac
     if in_list "$path" "$kit_only"; then
         printf '%s\n' "$sources" | grep -q -x -F -- "$path" && fail "$path is declared the kit's own, and is listed"
         continue

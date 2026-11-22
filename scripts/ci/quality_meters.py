@@ -158,9 +158,12 @@ def _sources(*names: str) -> list[str]:
     Absolute because the python tools run from this checkout - that is where the virtual
     environment they were installed into is - while the code they read may be somewhere
     else entirely.
+
+    Only the ones that exist. A tree with none of them is a tree with nothing to find, and handing a
+    tool a path that is not there makes it fail rather than report nothing.
     """
 
-    return [str(TREE / name) for name in names]
+    return [str(TREE / name) for name in names if (TREE / name).exists()]
 
 
 def _relative(path: str) -> str:
@@ -184,6 +187,8 @@ def _ruff(codes: list[str], *, targets: list[str], config: list[str] | None = No
     indistinguishable - which is the right trade here, because the count is the thing.
     """
 
+    if not targets:
+        return {}
     command = ["uv", "run", "ruff", "check", "--no-cache", "--select", ",".join(codes), "--output-format", "json"]
     for setting in config or []:
         command += ["--config", setting]
@@ -212,12 +217,15 @@ def python_cognitive() -> dict[str, float]:
     but it may not get one point worse.
     """
 
+    sources = _sources("app", "scripts", "server.py")
+    if not sources:
+        return {}
     output = _run(
         [
             "uv",
             "run",
             "complexipy",
-            *_sources("app", "scripts", "server.py"),
+            *sources,
             "--quiet",
             "--snapshot-ignore",
             "--output-format",
@@ -253,6 +261,10 @@ def frontend_complexity() -> dict[str, float]:
     stays the thing that ratchets - see the comment beside them.
     """
 
+    # A tree with no frontend has nothing for eslint to read. The same holds for the knip and jscpd
+    # meters below.
+    if not (_assets() / "eslint.config.js").exists():
+        return {}
     output = _run([str(NODE_BIN / "eslint"), "src", "-f", "json"], cwd=_assets())
     start = output.find("[")
     if start < 0:
@@ -273,6 +285,8 @@ def frontend_dead_code() -> dict[str, float]:
     unused export and adding another nets out visibly instead of silently.
     """
 
+    if not (_assets() / "knip.json").exists():
+        return {}
     output = _run([str(NODE_BIN / "knip"), "--no-progress", "--reporter", "json"], cwd=_assets())
     start = output.find("{")
     if start < 0:
@@ -293,6 +307,8 @@ def duplication() -> dict[str, float]:
     them per format rather than naming them. `.jscpd.json` says what counts as one.
     """
 
+    if not (TREE / ".jscpd.json").exists():
+        return {}
     # state/ is gitignored and is where the app keeps its own scratch, but a CI checkout
     # has neither it nor the run that would create it.
     output = TREE / "state" / "jscpd"
@@ -316,7 +332,7 @@ def _source_files() -> list[pathlib.Path]:
     .pre-commit-config.yaml; tests are left out because the other meters leave them out.
     """
 
-    found = [TREE / "server.py"]
+    found = [TREE / "server.py"] if (TREE / "server.py").exists() else []
     for directory, patterns in (
         (TREE / "app", ("*.py",)),
         (TREE / "scripts", ("*.py",)),

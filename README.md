@@ -13,16 +13,20 @@ The files sit at the paths a service repository uses for them.
 | Path | What it is |
 | ---- | ---------- |
 | `AGENTS.shared.md` | the rules every repository shares; a repository's own `AGENTS.md` reads it first |
-| `.claude/hooks/guard-bash.sh`, `.claude/hooks/guard-bash.test.sh` | the guard that holds the rules in `AGENTS.shared.md`, and its tests |
+| `.claude/hooks/guard-bash.sh` | the guard that holds the rules in `AGENTS.shared.md` |
 | `.claude/commands/` | the pre-PR adversarial pass, the end-to-end run and the screenshots |
 | `.claude/settings.json` | the permission allowlist and the hook registration |
 | `scripts/` | the container wrappers, the worktree scripts, the review reader and the CI helpers, among them the fast local test stage (`scripts/ci/fast_stage.py`) |
-| `tests/` | the Python tests of the scripts that have them: so far the fast stage's and the selection audit's |
+| `tests/` | the Python tests of the kit's scripts: the fast stage, the selection audit and the quality meters |
 | `.github/actions/` | the apt-install action |
 | `.github/workflows/test.yml` | the kit's own CI: the shell tests, and the Python compiles |
 | `devkit.conf` | the names the shared files read: `DEVKIT_SERVICE`, `DEVKIT_REPOSITORY` |
 | `devkit.files` | the files a service may take, with where each goes; the rest is the kit's own |
 | `scripts/devkit-sync.sh` | copies those files at a commit, and checks that a copy is still as the kit has it |
+
+The tests of the kit - `scripts/*.test.sh`, `scripts/ci/*.test.sh`, `.claude/hooks/guard-bash.test.sh` and
+`tests/` - are the kit's own: the kit's CI runs them, and a service does not take them. A copy of a script is
+byte-identical to what they ran against, and the drift check keeps it so.
 
 A service repository has a `devkit.conf` of its own. The variables the shared files read start with
 `DEVKIT_`, and the image, volume and container names take the service name from `devkit.conf`. Some files

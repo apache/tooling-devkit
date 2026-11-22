@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 """What the selection audit says of a pull request's failures (`scripts/ci/selection_audit.py`).
 
 Its one wrong answer that matters is a miss that is not one, or a miss reported as something else: so each

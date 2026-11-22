@@ -19,7 +19,6 @@
 # What apt-mirror.sh moves, and - the half that matters - what it leaves where it is. A
 # rewrite that catches too much leaves a runner unable to see any archive at all, which shows
 # up as every job failing to install anything, several minutes into each one.
-# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 set -eu
 
 here=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)

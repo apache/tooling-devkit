@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 """What the fast local stage selects, and from which base (`scripts/ci/fast_stage.py`).
 
 A selection that leaves out the test a change breaks reads as a pass, which is the failure that

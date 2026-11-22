@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.
 """What the weekly rollup of the selection audit says (`scripts/ci/selection_rollup.py`).
 
 What it reads was uploaded by pull requests' runs, so each test hands it records as an artifact would and
