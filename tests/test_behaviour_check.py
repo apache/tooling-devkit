@@ -32,7 +32,6 @@ import sys
 
 import pytest
 
-
 _CI = pathlib.Path(__file__).resolve().parent.parent / "scripts" / "ci"
 
 

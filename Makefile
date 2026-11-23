@@ -21,10 +21,11 @@ CI_MODULES = $(basename $(notdir $(wildcard scripts/ci/*.py)))
 test: lint test-shell test-python
 
 # The shellcheck options are those of the services' hook, over the scripts they take and not the tests:
-# the sharper checks that catch a bug, and `-x` to follow what a script sources. `ruff format` has the line
-# length of the services; a file that passes here is one their hooks leave as it is.
+# the sharper checks that catch a bug, and `-x` to follow what a script sources. `ruff format` and `ruff check` have the
+# line length and the rules of the services; a file that passes here is one their hooks leave as it is.
 lint:
 	uv run --frozen ruff format --check scripts tests
+	uv run --frozen ruff check scripts tests
 	uv run --frozen shellcheck --enable=quote-safe-variables,add-default-case,deprecate-which,avoid-nullary-conditions -x \
 		$(filter-out %.test.sh,$(shell git ls-files '*.sh'))
 

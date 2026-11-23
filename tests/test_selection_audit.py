@@ -29,9 +29,12 @@ import os
 import pathlib
 import subprocess
 import sys
-import types
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    import types
 
 _CI = pathlib.Path(__file__).resolve().parent.parent / "scripts" / "ci"
 

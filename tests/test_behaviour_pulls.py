@@ -27,16 +27,18 @@ import dataclasses
 import email.message
 import io
 import json
-import pathlib
 import subprocess
 import sys
 import urllib.error
 import urllib.request
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from tests.test_behaviour_check import commit, gate, git, pulls
+
+if TYPE_CHECKING:
+    import pathlib
 
 SQUASH = """\
 feat: two changes (#7)
