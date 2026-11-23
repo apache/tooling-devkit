@@ -387,6 +387,19 @@ but the stages of the gate (`scripts/local/verify.toml`).
 
 - Branch from `main` and open the PR against `main`. Make `make check` and
   `make test` pass first.
+- **`scripts/pr-preflight.sh` says which rules this branch has taken on**, read
+  off the files it touches: the rules of the kit, and those the repository adds in
+  `scripts/local/preflight.toml`. It also runs the contention scan, so who else is
+  in these files is answered without assembling the loop by hand. It prints and
+  exits 0 - the gate is `make container-verify`, and a checklist that could fail a
+  build gets worked around. It exits non-zero on a base it cannot resolve, on a
+  rules file it cannot use, and when the scan could not look at everything: an
+  `origin` it could not read, work on `origin` this checkout has not fetched, a
+  branch git refused to compare, a path with a newline in it. Its answer to who else
+  is in these files is `none`, which is read as leave to restructure them, so it is
+  printed only when the scan saw every branch. It reads `origin` rather than
+  fetching from it - a checklist has no business rewriting your refs - and names
+  the fetch for you to run.
 - **`/simplify` between two runs of the gate: verify, simplify, verify, push.** It
   asks what is easy not to ask of your own branch - is this bigger than it had to be -
   and cuts: scaffolding the change no longer needs, a helper generalised past its one
@@ -404,8 +417,8 @@ but the stages of the gate (`scripts/local/verify.toml`).
   rewrite. It rewrites files in place, so the second `make container-verify` is what
   says the cut was safe - and it runs only the stages whose files the cut touched
   (`scripts/ci/verify.py`), so a comment cut costs the hooks, not the suite. And if it touched a file the change had not touched before,
-  the scan for who else is in these files was answered about the old list: run it again, or
-  its `none` is about files nobody scanned.
+  `scripts/pr-preflight.sh` was answered about the old list: run it again, or its
+  `none` is about files nobody scanned.
 
   Skip it where the pass below is skipped, and for the same reason: a branch of prose
   has nothing for it to cut, and running the gate twice over one buys nothing.
