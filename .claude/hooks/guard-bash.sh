@@ -871,6 +871,9 @@ make_assignment_refusal() {
                 *) printf '%s' "DEVKIT_RUNTIME is podman or docker, and \`$_value\` is a program run on the host" ;;
             esac
             ;;
+        # The list is the kit's, and a repository cannot add to it: a name it could add is `SHELL` or `PATH`. Each
+        # DEVKIT_ name here is a setting a person changes for one run, and scripts/guard-names.test.sh holds the
+        # list to the scripts and says why each name that is not here is not.
         # the DEVKIT_* names the scripts read, and no others: a pattern let `DEVKIT_X$(...)` and `DEVKIT_X!` through
         KEEP_PORT | KEEP_NAME | PYTEST_WORKERS | QUALITY_REF | MINUTES_READING_REF | SNAPSHOT_REF | FAST_BASE | \
             CHECK_REF | DEVKIT_CONTAINER_NAME | DEVKIT_DETACH | DEVKIT_E2E_HOST | DEVKIT_E2E_NETWORK | DEVKIT_E2E_NODE_VOLUME | \

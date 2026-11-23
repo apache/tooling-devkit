@@ -18,6 +18,7 @@ that is replaced stays, with a line that says what replaced it. Say only what wa
 8. [The kit's own Python setup](#8-the-kits-own-python-setup)
 9. [Seeded from one repository, made general by applying it to others](#9-seeded-from-one-repository-made-general-by-applying-it-to-others)
 10. [A file of the kit refers to nothing outside the kit](#10-a-file-of-the-kit-refers-to-nothing-outside-the-kit)
+11. [What a make wrapper may be given](#11-what-a-make-wrapper-may-be-given)
 
 ## 1. One source, copies in the services
 
@@ -265,3 +266,37 @@ sentences that `pr-review.sh` prints changed, which was checked line by line. A 
 cleaned the same way before it comes in.
 
 **Not done.** Keeping the references as a trail back to the services: the history is in the services.
+
+## 11. What a make wrapper may be given
+
+Accepted. apache/tooling-devkit, the change that adds `scripts/guard-names.test.sh`.
+
+**Why.** The guard refuses everything on a make line but the target and the `NAME=value` pairs it lists, and its
+comment says the list is "the names the scripts read, and no others". Nothing held it to that. The list of
+tooling-agenda and the one of tooling-secretary-records differed by three names, and counting what the kit's
+scripts use showed 36 `DEVKIT_` names, of which the guard lists 19. Every listed name is read by a script. Of
+the 17 that are not listed, one has a rule of its own and the others should not be.
+
+**Decided.**
+- The list is the kit's and is closed. It holds two kinds of name: the `DEVKIT_` settings a person changes
+  for one run of a wrapper, and the make variables of the shared targets (`KEEP_PORT`, `QUALITY_REF`, `ARGS` and
+  the like). A value is a plain value, except where a name has a shape of its own (`ARGS`, `FILTER`, `KEEP_CMD`,
+  `DEVKIT_RUNTIME`).
+- A `DEVKIT_` name that a script uses is on the list, or is declared not to be, with the reason: it is the guard's
+  own switch, it is a program or a place the script runs or fetches from, it is a script's own setting given to it
+  directly, it is read from `devkit.conf`, it is a hook for the kit's tests, or a script or CI sets it for what
+  it starts.
+- `scripts/guard-names.test.sh` holds this. It fails when a script starts to use a name that nobody has decided
+  on, when a name is on both lists or on neither, when a name is on either list and no script uses it, when the
+  guard refuses a listed name, allows one declared as not, or accepts a value that is more than a plain value.
+- The three names in the list of tooling-secretary-records (`APT_CACHE`, `E2E` and `E2E_EXTERNAL_SERVER`) are
+  not added. The first is set by a CI action, and the other two are read by that repository's own files, not by
+  a script of the kit.
+
+**Costs.** A variable of a service's own that has to be given on a make line needs a change to the kit's list.
+That is a pull request to the kit, reviewed by the Tooling PMC, which is right: it widens what an agent may pass.
+
+**Not done.** A list that a repository writes, in `devkit.conf` or a file of its own: a name it could add is
+`SHELL` or `PATH`, whose plain value runs code, which is the reason of 4. A list read from the repository's
+`Makefile`, for the same reason. A pattern such as `DEVKIT_*` in place of the names: a pattern is what let
+`DEVKIT_X$(...)` and `DEVKIT_X!` through.
