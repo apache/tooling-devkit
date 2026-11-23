@@ -317,6 +317,31 @@ unset DEVKIT_SYNC_PYTHON
 [ "$status" -eq 0 ] || fail "a repository without additions needed python"
 [ "$(cat "$settings")" = "$(cat "$kit/.claude/settings.json")" ] || fail "and settings are the kit's again with the additions gone"
 
+# --- a file the kit moves to another source, and one whose executable bit changes -------------------------
+kit="$work/kit3"
+svc="$work/svc3"
+git init -q "$kit"
+mkdir -p "$kit/old" "$kit/new" "$svc/scripts"
+printf 'old/t.sh scripts/t.sh\n' > "$kit/devkit.files"
+printf '#!/bin/sh\necho old\n' > "$kit/old/t.sh"
+chmod +x "$kit/old/t.sh"
+m1=$(commit_kit one)
+cp "$here/devkit-sync.sh" "$svc/scripts/devkit-sync.sh"
+printf 'DEVKIT_SERVICE=svc3\nDEVKIT_REPOSITORY=apache/tooling-svc3\n' > "$svc/devkit.conf"
+sync_to "$m1"
+[ -x "$svc/scripts/t.sh" ] || fail "the first copy is executable, as the kit has it"
+git -C "$kit" rm -q -r old
+printf 'new/t.sh scripts/t.sh\n' > "$kit/devkit.files"
+printf '#!/bin/sh\necho new\n' > "$kit/new/t.sh"
+m2=$(commit_kit moved)
+sync_to "$m2"
+[ "$status" -eq 0 ] || fail "a sync of a file the kit moved runs"
+[ -f "$svc/scripts/t.sh" ] || fail "a file the kit moved to another source is not removed: its destination is still the kit's"
+[ "$(sed -n 2p "$svc/scripts/t.sh")" = "echo new" ] || fail "and it has the new content"
+[ ! -x "$svc/scripts/t.sh" ] || fail "and the mode of the new copy, not the mode of the one it replaced"
+check
+[ "$status" -eq 0 ] || fail "the check passes right after: a mode the sync did not copy would be drift"
+
 if [ "$failures" -ne 0 ]; then
     echo "$failures devkit-sync case(s) failed" >&2
     exit 1

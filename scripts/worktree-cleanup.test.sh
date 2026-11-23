@@ -10,6 +10,10 @@
 
 set -eu
 
+# checkout-id.sh sets it where the scripts run: the service the labels are scoped to
+DEVKIT_SERVICE=devkit
+export DEVKIT_SERVICE
+
 here=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 failures=0
 work=$(CDPATH='' cd -- "$(mktemp -d)" && pwd -P)
@@ -244,6 +248,9 @@ nothing_removed "a detached HEAD was refused"
 )
 grep -q "^volume devkit-venv-repo-pushed-new devkit.checkout-path=$work/repo-pushed\$" "$work/created" ||
     fail "a name the checkout derives was not created labelled with it: $(cat "$work/created")"
+# The label is the service's own, so the cleanup of one service does not read what another labelled.
+other=$(DEVKIT_SERVICE=other sh -c '. "$1/checkout-resources.sh"; printf "%s" "$PATH_LABEL"' sh "$here")
+[ "$other" = other.checkout-path ] || fail "the ownership label is scoped to the service: $other"
 if grep -q '^volume devkit-venv \|^volume shared-venv ' "$work/created"; then
     fail "a name given outright, or the primary's, was labelled: $(cat "$work/created")"
 fi
