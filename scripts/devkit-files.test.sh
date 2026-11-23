@@ -20,7 +20,7 @@ fail() {
 # What is the kit's own and is not taken by a service. Besides these, every test of the kit's is its
 # own: the kit's CI runs them, and a service has no use for a copy (see the README). So is every file of
 # docs/, which records why the kit is the way it is.
-kit_only='.asf.yaml .gitignore .python-version .tool-versions Makefile pyproject.toml uv.lock .github/dependabot.yml .github/workflows/test.yml LICENSE README.md devkit.conf devkit.files'
+kit_only='.asf.yaml .gitignore .python-version .tool-versions Makefile pyproject.toml uv.lock .github/dependabot.yml .github/workflows/test.yml LICENSE README.md AGENTS.md CLAUDE.md devkit.conf devkit.files'
 # What cannot carry the line that says where to change it: JSON and a license template have no comment.
 no_header='.claude/settings.json scripts/ci/LICENSE-template.txt'
 marker='Comes from apache/tooling-devkit (devkit.files): change it there, not in a copy.'
