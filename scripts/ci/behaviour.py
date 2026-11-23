@@ -89,7 +89,8 @@ from typing import TYPE_CHECKING, Any, Final
 
 import behaviour_gate as gate
 import behaviour_pulls
-from behaviour_selection import DEPENDENCIES, compared, measure, select
+from behaviour_rules import LocalError, load_rules
+from behaviour_selection import DEPENDENCIES, EVERYTHING_WHEN, compared, measure, select
 
 if TYPE_CHECKING:
     from behaviour_selection import Selection
@@ -385,10 +386,10 @@ def _honoured(allowances: list[tuple[str, str]], recorded: list[str]) -> tuple[l
     return kept, [f"`{gate.ALLOW}: {glob}` is not honoured: the gate refuses it" for glob in sorted(dropped)]
 
 
-def _harness_notes(changed: list[str], harness: list[tuple[str, str]]) -> list[str]:
+def _harness_notes(changed: list[str], harness: list[tuple[str, str]], harness_files: tuple[str, ...]) -> list[str]:
     if not harness:
         return []
-    if not gate.touched(changed, gate.HARNESS_FILES):
+    if not gate.touched(changed, harness_files):
         return [
             f"{gate.HARNESS}: '{subject}' says the harness changes, and it does not - drop the trailer"
             for _, subject in harness
@@ -396,12 +397,17 @@ def _harness_notes(changed: list[str], harness: list[tuple[str, str]]) -> list[s
     return [f"the harness changes: {why} ('{subject}')" for why, subject in harness]
 
 
-def _choose(changed: list[str], moved: list[str], executed: dict[str, dict[str, Any]] | None) -> Selection | None:
+def _choose(
+    changed: list[str],
+    moved: list[str],
+    executed: dict[str, dict[str, Any]] | None,
+    everything_when: tuple[str, ...] = EVERYTHING_WHEN,
+) -> Selection | None:
     """What to record: None for everything, or the parts `changed` can reach - none, for a change to
     nothing a part runs, in which case the route walk is still recorded."""
     if executed is None:
         return None
-    selection = select(ROOT, changed, executed, added_or_removed=moved)
+    selection = select(ROOT, changed, executed, added_or_removed=moved, everything_when=everything_when)
     if selection.everything:
         print("Recording everything:\n" + "\n".join(f"  {reason}" for reason in selection.reasons))
         return None
@@ -456,7 +462,13 @@ def check(
     pulls: pathlib.Path | None = None,
 ) -> int:
     """Record with this checkout and compare with the base. 1 on a difference nothing allows, or a branch
-    the gate refuses; 2 on a base that is not this branch's, or a `pulls` reading of another range."""
+    the gate refuses; 2 on a base that is not this branch's, a `pulls` reading of another range, or a
+    `scripts/local/behaviour.toml` that cannot be used."""
+    try:
+        rules = load_rules(ROOT)
+    except LocalError as error:
+        print(error, file=sys.stderr)
+        return 2
     recorded = _usable_base(base_out, ref)
     if recorded is None:
         return 2
@@ -472,7 +484,7 @@ def check(
         return 2
     allowances, harness, read_from = claimed
     changed = _changed_since(recorded.commit)
-    refused = gate.refusals(changed, allowances, harness, list(recorded.files))
+    refused = gate.refusals(changed, allowances, harness, list(recorded.files), rules.harness_files)
     if refused and not full:
         heading = "This branch is not compared:"
         print(heading + "\n" + "\n".join(f"  {reason}" for reason in refused))
@@ -485,14 +497,14 @@ def check(
         *read_from,
         *(f"in these commits: {reason}" for reason in refused),
         *dropped,
-        *_harness_notes(changed, harness),
+        *_harness_notes(changed, harness, rules.harness_files),
     ]
 
     executed = load_executed(base_out)
-    selection = None if full else _choose(changed, _added_or_removed(recorded.commit), executed)
+    selection = None if full else _choose(changed, _added_or_removed(recorded.commit), executed, rules.everything_when)
     head = _record_selected(head_out, selection, executed)
     if selection is not None:
-        recorded = Record(recorded.commit, True, compared(recorded.files, executed or {}, selection))
+        recorded = Record(recorded.commit, True, compared(recorded.files, executed or {}, selection, rules.whole))
     return _report(recorded, head, allowances, notes, diff_file)
 
 
@@ -502,7 +514,12 @@ def _measure(executed_file: pathlib.Path, count: int, ref: str) -> int:
         listed = _statuses(f"{sha}^", sha)
         moved = [path for status, path in listed if status in ("A", "D")]
         commits.append((sha, _git("log", "-1", "--format=%s", sha), [path for _, path in listed], moved))
-    measure(ROOT, json.loads(executed_file.read_text()), commits)
+    try:
+        rules = load_rules(ROOT)
+    except LocalError as error:
+        print(error, file=sys.stderr)
+        return 2
+    measure(ROOT, json.loads(executed_file.read_text()), commits, rules.everything_when)
     return 0
 
 

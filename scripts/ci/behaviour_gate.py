@@ -44,19 +44,14 @@ HARNESS: Final = "Behaviour-Harness"
 HARNESS_FILES: Final = (
     "tests/behaviour/*",
     "tests/conftest.py",
-    "tests/test-config.yaml",
-    "tests/data/wc/*",
-    "tests/data/static_assets/*",
     "scripts/ci/behaviour*.py",
     "scripts/ci/trailers.py",
 )
 """What the record is made with: a change here changes what is recorded without the app changing.
 
-Of `tests/data`, the two directories the record reads: the fixture working copy (`DATA_DIR_SOURCE`
-in tests/conftest.py) and the assets it asks for (`STATIC_ASSETS_FIXTURE_DIR`). The rest of it is
-pytest's own - the element JSON and parser snapshots, and the inputs of other tests - and a snapshot
-moves with the app change that moves it. A new directory the harness reads is added here;
-`tests/test_behaviour_check.py` holds the two above to it."""
+A repository adds the data its record reads in `scripts/local/behaviour.toml` (`behaviour_rules.py`).
+Name only what the record reads: what only pytest reads moves with the app change that moves it, and a
+branch changing both has to be compared, not refused as a harness change beside one to the app."""
 
 HARNESS_MARKS: Final = ("scripts/ci/behaviour.py", "tests/behaviour")
 """What a commit holds where it can record itself."""
@@ -146,11 +141,15 @@ def refused(allowances: list[tuple[str, str]], recorded: list[str]) -> list[tupl
 
 
 def refusals(
-    changed: list[str], allowances: list[tuple[str, str]], harness: list[tuple[str, str]], recorded: list[str]
+    changed: list[str],
+    allowances: list[tuple[str, str]],
+    harness: list[tuple[str, str]],
+    recorded: list[str],
+    harness_files: tuple[str, ...] = HARNESS_FILES,
 ) -> list[str]:
     """Why the branch may not be compared at all, or nothing. `recorded` is every path the base record holds."""
     reasons = [reason for _, reason in refused(allowances, recorded)]
-    tools = touched(changed, HARNESS_FILES)
+    tools = touched(changed, harness_files)
     if not tools:
         return reasons
     named = ", ".join(tools[:5]) + (f" and {len(tools) - 5} more" if len(tools) > 5 else "")

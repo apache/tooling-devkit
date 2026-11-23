@@ -17,7 +17,7 @@ The files sit at the paths a service repository uses for them.
 | `.claude/commands/` | the pre-PR adversarial pass, the end-to-end run and the screenshots |
 | `.claude/settings.json` | the permission allowlist and the hook registration; a service adds permissions in `.claude/settings.additions.json` |
 | `scripts/` | the container wrappers, the worktree scripts, the review reader and the CI helpers, among them the fast local test stage (`scripts/ci/fast_stage.py`) |
-| `tests/` | the Python tests of the kit's scripts: the fast stage, the selection audit and the quality meters |
+| `tests/` | the Python tests of the kit's scripts: the fast stage, the selection audit, the quality meters and the behaviour comparison |
 | `.github/actions/` | the apt-install action |
 | `.github/workflows/test.yml` | the kit's own CI: the shell tests, and the Python compiles |
 | `docs/design.md` | why the kit is the way it is: a section for each design decision. The kit's own, not synced |
@@ -60,7 +60,7 @@ is a pull request in the kit: see "Changing a file that comes from the kit" in `
 
 The files come from tooling-agenda, with the service name and the variable prefix taken out. Not in the kit
 yet: the Action that opens a sync pull request, the CI job that runs the check in each repository, the
-extension points for what a repository needs in its own form, except the first three. See the tracking issue.
+extension points for what a repository needs in its own form, except the first four. See the tracking issue.
 
 The first extension point is `scripts/local/verify.toml`, a file a repository owns, in which it names the
 stages of its gate (`scripts/ci/verify.py`), the files and settings each reads, and what else they depend on.
@@ -78,6 +78,12 @@ The third is `.claude/settings.additions.json`, in which a repository adds permi
 first, then those of the file, each once. Nothing else can be added, and the hooks stay as the kit has them. A
 repository with the file needs Python 3.11 or newer where it runs the sync, and a file the sync cannot use is
 refused with every reason at once. See `docs/design.md`, 12.
+
+The fourth is `scripts/local/behaviour.toml`, in which a repository adds to what the behaviour comparison
+(`scripts/ci/behaviour.py`) takes from the kit: globs of paths that make a change record everything
+(`everything_when`), globs of what the record is made with (`harness_files`), and the tests whose parts run as
+one (`[whole]`). The kit has the lists that hold everywhere; the file only adds to them. A file that cannot be
+used is refused with every reason at once. The format is in the docstring of `scripts/ci/behaviour_rules.py`.
 
 CI workflows are not in the kit. Dependabot updates the pinned actions in the `.github/workflows/` of each
 repository, so a copy of a kit workflow would differ from the kit after every update, and the drift check
