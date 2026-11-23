@@ -329,6 +329,34 @@ chmod +x "$work/failgit/git"
 held=$(PATH="$work/failgit:$PATH" sh -c '. "$1"; held_ignored "$2"' _ "$here/worktree-held.sh" "$work/landed")
 [ -n "$held" ] || fail "a failed listing of ignored files reads as nothing held"
 
+# A directory with nothing tracked in it and only a build inside: git lists it as the directory alone,
+# and that is not what holds a worktree. Its files decide. A repository of its own, with no tracked file
+# under app/client/static/ as in a service whose page templates live elsewhere.
+git init -q -b main "$work/builtonly"
+git -C "$work/builtonly" -c user.name=t -c user.email=t@example.org commit -q --allow-empty -m base
+printf 'app/client/static/assets\nnotes/\n' > "$work/builtonly/.git/info/exclude"
+mkdir -p "$work/builtonly/app/client/static/assets/bundled" "$work/builtonly/notes"
+: > "$work/builtonly/app/client/static/assets/bundled/page.js"
+: > "$work/builtonly/notes/mine.md"
+held=$(sh -c '. "$1"; held_ignored "$2"' _ "$here/worktree-held.sh" "$work/builtonly")
+case $held in
+    *app/client/static*) fail "a directory holding only a build was held: $held" ;;
+    *) : ;;
+esac
+case $held in
+    *notes/*) : ;;
+    *) fail "a directory holding a file somebody made was not held: $held" ;;
+esac
+: > "$work/builtonly/app/client/static/todo.txt"
+printf 'app/client/static/todo.txt\n' >> "$work/builtonly/.git/info/exclude"
+held=$(sh -c '. "$1"; held_ignored "$2"' _ "$here/worktree-held.sh" "$work/builtonly")
+case $held in
+    *app/client/static*) : ;;
+    *) fail "a directory holding a build and a file somebody made beside it was not held: $held" ;;
+esac
+held=$(PATH="$work/failgit:$PATH" sh -c '. "$1"; held_ignored "$2"' _ "$here/worktree-held.sh" "$work/builtonly")
+[ -n "$held" ] || fail "a failed listing inside a directory reads as nothing held"
+
 if [ "$failures" -gt 0 ]; then
     echo "worktree-sweep: $failures failure(s)" >&2
     exit 1
