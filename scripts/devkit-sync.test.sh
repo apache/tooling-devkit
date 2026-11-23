@@ -188,7 +188,7 @@ mv "$svc/devkit.conf.off" "$svc/devkit.conf"
 printf 'the kit\n' > "$kit/devkit.conf"
 printf 'the kit\n' > "$kit/devkit.lock"
 mkdir -p "$kit/.git-copy"
-for bad in '/etc/passwd' '../outside' 'scripts/../../outside' 'devkit.conf' 'devkit.lock' '.git/config' 'odd$name'; do
+for bad in '/etc/passwd' '../outside' 'scripts/../../outside' 'devkit.conf' 'devkit.lock' '.claude/settings.additions.json' '.git/config' 'odd$name'; do
     printf '%s\n' "$bad" > "$kit/devkit.files"
     bad_commit=$(commit_kit "lists $bad")
     sync_to "$bad_commit"
@@ -204,6 +204,118 @@ sync_to "$(commit_kit 'lists three words')"
 [ -e "$work/outside" ] && fail "nothing was written outside the repository"
 [ "$mine" = "$(cat "$svc/devkit.conf")" ] || fail "devkit.conf is as it was after a kit that listed it"
 [ "$(sed -n 's/^commit //p' "$svc/devkit.lock")" = "$c2" ] || fail "devkit.lock is as it was after a kit that listed it"
+
+# --- .claude/settings.json: the base of the kit, and what a repository adds ----------------------------------
+# The one file that is not a byte copy. A second kit and a second service, so that the first run is untouched.
+
+kit="$work/kit2"
+svc="$work/svc2"
+git init -q "$kit"
+mkdir -p "$kit/.claude" "$svc/scripts" "$svc/.claude"
+cat > "$kit/.claude/settings.json" << 'JSON'
+{
+  "permissions": {
+    "allow": ["Bash(make a:*)", "Bash(make b:*)"],
+    "deny": ["Read(./.env)"]
+  },
+  "hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [{"type": "command", "command": "guard"}]}]}
+}
+JSON
+printf '.claude/settings.json\n' > "$kit/devkit.files"
+s1=$(commit_kit settings)
+cp "$here/devkit-sync.sh" "$svc/scripts/devkit-sync.sh"
+printf 'DEVKIT_SERVICE=svc2\nDEVKIT_REPOSITORY=apache/tooling-svc2\n' > "$svc/devkit.conf"
+settings="$svc/.claude/settings.json"
+additions="$svc/.claude/settings.additions.json"
+
+# a field of the merged file, as a line of JSON, for what is asserted below
+field() { python3 -I -c 'import json,sys; d=json.load(open(sys.argv[1])); print(json.dumps(eval(sys.argv[2]), sort_keys=True))' "$settings" "$1"; }
+
+# no additions: a byte copy, as every other file is
+sync_to "$s1"
+[ "$status" -eq 0 ] || fail "a sync of settings with no additions runs"
+[ "$(cat "$settings")" = "$(cat "$kit/.claude/settings.json")" ] || fail "settings with no additions are a byte copy of the kit's"
+check
+[ "$status" -eq 0 ] || fail "and the check passes"
+
+# additions: appended after the kit's entries, with no duplicates, and nothing else of the kit's changes
+cat > "$additions" << 'JSON'
+{"permissions": {"allow": ["Bash(make c:*)", "Bash(make a:*)", "Bash(make c:*)"], "deny": ["Read(./secret.yaml)"]}}
+JSON
+sync_to "$s1"
+[ "$status" -eq 0 ] || fail "a sync with additions runs" 
+[ "$(field 'd["permissions"]["allow"]')" = '["Bash(make a:*)", "Bash(make b:*)", "Bash(make c:*)"]' ] ||
+    fail "the additions to allow follow the kit's entries, once each: $(field 'd["permissions"]["allow"]')"
+[ "$(field 'd["permissions"]["deny"]')" = '["Read(./.env)", "Read(./secret.yaml)"]' ] ||
+    fail "the additions to deny follow the kit's: $(field 'd["permissions"]["deny"]')"
+[ "$(field 'd["hooks"]')" = "$(python3 -I -c 'import json,sys; print(json.dumps(json.load(open(sys.argv[1]))["hooks"], sort_keys=True))' "$kit/.claude/settings.json")" ] ||
+    fail "the hook that registers the guard is the kit's, untouched"
+[ -f "$additions" ] && grep -q 'secret.yaml' "$additions" || fail "the additions file of the repository is left as it was"
+check
+[ "$status" -eq 0 ] || fail "the check passes right after a sync with additions" 
+
+# the file is drift from the base and the additions alike
+printf '\n' >> "$settings"
+check
+[ "$status" -ne 0 ] && says 'drift: .claude/settings.json differs from the kit at' && says 'with .claude/settings.additions.json' ||
+    fail "an edit of the merged file was not drift, with the additions named"
+sync_to "$s1"
+check
+[ "$status" -eq 0 ] || fail "a sync takes the merged file back to what the base and the additions make"
+cat > "$additions" << 'JSON'
+{"permissions": {"allow": ["Bash(make d:*)"]}}
+JSON
+check
+[ "$status" -ne 0 ] && says 'drift: .claude/settings.json' || fail "a change to the additions is drift until a sync"
+sync_to "$s1"
+[ "$(field 'd["permissions"]["allow"]')" = '["Bash(make a:*)", "Bash(make b:*)", "Bash(make d:*)"]' ] ||
+    fail "the additions of today are the ones in the file"
+
+# what a repository may not add is refused with every reason, and nothing is copied
+before=$(cat "$settings")
+refused_additions() {
+    printf '%s\n' "$1" > "$additions"
+    sync_to "$s1"
+    if [ "$status" -eq 0 ]; then
+        fail "additions of $2 were accepted"
+    elif ! says "$3"; then
+        fail "additions of $2: the reason was not said ($3)"
+    fi
+    [ "$(cat "$settings")" = "$before" ] || fail "additions of $2 changed the settings anyway"
+}
+refused_additions '{"hooks": {}}' 'a hook' 'hooks is not something a repository adds'
+refused_additions '{"permissions": {"hooks": []}}' 'a key of permissions it may not' 'permissions.hooks is not something a repository adds'
+refused_additions '{"permissions": {"allow": "Bash(x)"}}' 'a string for a list' 'permissions.allow is a list of non-empty strings'
+refused_additions '{"permissions": {"deny": ["ok", ""]}}' 'an empty entry' 'permissions.deny is a list of non-empty strings'
+refused_additions '{"permissions": []}' 'permissions that is no object' 'permissions is an object'
+refused_additions '[1]' 'a list' 'the file is a JSON object'
+refused_additions 'not json' 'what is not JSON' 'the file cannot be read'
+printf '%s\n' '{"hooks": 1, "permissions": {"deny": "x", "other": []}}' > "$additions"
+sync_to "$s1"
+[ "$status" -ne 0 ] && says 'hooks is not' && says 'permissions.other is not' && says 'permissions.deny is a list' ||
+    fail "not every reason was given at once"
+
+# the additions of a repository that keeps the file as its own are not read, and without python they cannot be
+printf '%s\n' '{"hooks": 1}' > "$additions"
+printf 'DEVKIT_SERVICE=svc2\nDEVKIT_REPOSITORY=apache/tooling-svc2\nDEVKIT_SKIP=.claude/settings.json\n' > "$svc/devkit.conf"
+sync_to "$s1"
+[ "$status" -eq 0 ] || fail "additions were read for a file the repository keeps as its own"
+printf 'DEVKIT_SERVICE=svc2\nDEVKIT_REPOSITORY=apache/tooling-svc2\n' > "$svc/devkit.conf"
+printf '%s\n' '{"permissions": {"allow": ["Bash(make e:*)"]}}' > "$additions"
+DEVKIT_SYNC_PYTHON=/no/such/python3
+export DEVKIT_SYNC_PYTHON
+sync_to "$s1"
+unset DEVKIT_SYNC_PYTHON
+[ "$status" -ne 0 ] && says 'needs python3' || fail "additions with no python were not refused, and said"
+
+# without an additions file, a repository needs no python at all
+rm -f "$additions"
+DEVKIT_SYNC_PYTHON=/no/such/python3
+export DEVKIT_SYNC_PYTHON
+sync_to "$s1"
+unset DEVKIT_SYNC_PYTHON
+[ "$status" -eq 0 ] || fail "a repository without additions needed python"
+[ "$(cat "$settings")" = "$(cat "$kit/.claude/settings.json")" ] || fail "and settings are the kit's again with the additions gone"
 
 if [ "$failures" -ne 0 ]; then
     echo "$failures devkit-sync case(s) failed" >&2

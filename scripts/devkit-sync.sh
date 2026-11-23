@@ -23,9 +23,15 @@
 # An override says that this copy differs from the kit on purpose: with its issue, and the day it ends.
 # The sync leaves an overridden file as it is, and the check lets it differ until that day.
 #
+# One file is not a byte copy: .claude/settings.json is the base of the kit with the entries this
+# repository adds in .claude/settings.additions.json, if there is one. It may add to `permissions.allow`,
+# `permissions.deny` and `permissions.ask`, and to nothing else, so the hook that registers the guard stays
+# the kit's and a deny of the kit's stays. The merge is made by python3, inline below, and only where the
+# additions file exists; the check compares the file with that merge.
+#
 # Where the kit comes from: DEVKIT_SOURCE, else its repository on GitHub. Nothing the kit holds is run
-# here: the files are copied, and their paths are checked first. DEVKIT_TODAY (YYYY-MM-DD) is for the
-# tests.
+# here: the files are copied, and their paths are checked first. DEVKIT_TODAY (YYYY-MM-DD) and
+# DEVKIT_SYNC_PYTHON are for the tests.
 #
 # This script is a kit file like the others, so the first copy of it is made by hand.
 
@@ -36,6 +42,8 @@ repo_root=$(CDPATH='' cd -- "$script_dir/.." && pwd)
 conf="$repo_root/devkit.conf"
 lock="$repo_root/devkit.lock"
 kit_url=${DEVKIT_SOURCE:-https://github.com/apache/tooling-devkit.git}
+settings_dst=.claude/settings.json
+settings_additions=.claude/settings.additions.json
 
 die() {
     echo "devkit-sync: $*" >&2
@@ -81,7 +89,7 @@ manifest() {
         _dst=${2:-$1}
         for _path in "$_src" "$_dst"; do
             case $_path in
-                /* | ../* | */../* | */.. | .. | .git | .git/* | */.git/* | devkit.conf | devkit.lock)
+                /* | ../* | */../* | */.. | .. | .git | .git/* | */.git/* | devkit.conf | devkit.lock | .claude/settings.additions.json)
                     die "devkit.files lists a path the sync does not write: $_path"
                     ;;
                 *[!A-Za-z0-9._/-]*) die "devkit.files lists a path with an odd character: $_path" ;;
@@ -127,6 +135,86 @@ same_file() {
     git diff --no-index --quiet -- "$1" "$2" > /dev/null 2>&1
 }
 
+# What a destination is made from: the file of the kit, except .claude/settings.json where there is a merge.
+merged_settings=''
+source_file() {
+    if [ "$2" = "$settings_dst" ] && [ -n "$merged_settings" ]; then
+        printf '%s\n' "$merged_settings"
+    else
+        printf '%s\n' "$work/kit/$1"
+    fi
+}
+
+# The base of the kit and the additions of this repository, made into one file, when there are additions.
+# Python reads both as data and prints the result; a service adds only to the three lists of permissions.
+prepare_settings() {
+    merged_settings=''
+    [ -f "$repo_root/$settings_additions" ] || return 0
+    _base=$(awk -v d="$settings_dst" '$2 == d { print $1; exit }' "$work/manifest")
+    [ -n "$_base" ] || return 0
+    skipped "$settings_dst" && return 0
+    _python=${DEVKIT_SYNC_PYTHON:-python3}
+    command -v "$_python" > /dev/null 2>&1 ||
+        die "$settings_additions has to be merged into $settings_dst, which needs python3, and there is none"
+    if ! "$_python" -I - "$work/kit/$_base" "$repo_root/$settings_additions" \
+        > "$work/settings.merged" 2> "$work/settings.errors" << 'PYTHON'
+import json
+import sys
+
+KEYS = ("allow", "deny", "ask")
+base_path, additions_path = sys.argv[1], sys.argv[2]
+problems = []
+
+
+def read(path, what):
+    try:
+        with open(path, encoding="utf-8") as file:
+            document = json.load(file)
+    except (OSError, ValueError) as error:
+        problems.append(f"{what} cannot be read: {error}")
+        return None
+    if not isinstance(document, dict):
+        problems.append(f"{what} is a JSON object")
+        return None
+    return document
+
+
+base = read(base_path, "the settings of the kit")
+added = read(additions_path, "the file")
+permissions = {}
+if added is not None:
+    problems += [f"{key} is not something a repository adds: only `permissions`" for key in sorted(set(added) - {"permissions"})]
+    permissions = added.get("permissions", {})
+    if not isinstance(permissions, dict):
+        problems.append("permissions is an object")
+        permissions = {}
+    problems += [
+        f"permissions.{key} is not something a repository adds: only {', '.join(KEYS)}" for key in sorted(set(permissions) - set(KEYS))
+    ]
+    for key in KEYS:
+        entries = permissions.get(key, [])
+        if not isinstance(entries, list) or not all(isinstance(entry, str) and entry.strip() for entry in entries):
+            problems.append(f"permissions.{key} is a list of non-empty strings")
+if problems:
+    print("\n".join(problems), file=sys.stderr)
+    sys.exit(1)
+merged = base.setdefault("permissions", {})
+for key in KEYS:
+    entries = merged.setdefault(key, []) if permissions.get(key) else None
+    for entry in permissions.get(key, []):
+        if entry not in entries:
+            entries.append(entry)
+sys.stdout.reconfigure(encoding="utf-8")
+sys.stdout.write(json.dumps(base, indent=2, ensure_ascii=False) + "\n")
+PYTHON
+    then
+        { echo "devkit-sync: $settings_additions cannot be used:"; sed 's/^/  /' "$work/settings.errors"; } >&2
+        exit 1
+    fi
+    chmod 644 "$work/settings.merged"
+    merged_settings=$work/settings.merged
+}
+
 # Whether the overrides in the file $2 name the path $1.
 overridden() {
     awk -v p="$1" '$1 == p { found = 1 } END { exit !found }' "$2"
@@ -149,6 +237,7 @@ check() {
     fetch_kit "$_locked" "$work/kit" > /dev/null
     overrides > "$work/overrides"
     manifest "$work/kit" > "$work/manifest"
+    prepare_settings
     _today=$(printf '%s' "${DEVKIT_TODAY:-$(date +%Y-%m-%d)}" | tr -d '-')
     _problems=0
     _checked=0
@@ -166,8 +255,12 @@ check() {
         if [ ! -f "$repo_root/$_dst" ]; then
             echo "missing: $_dst" >&2
             _problems=$((_problems + 1))
-        elif ! same_file "$work/kit/$_src" "$repo_root/$_dst"; then
-            echo "drift: $_dst differs from the kit at $(short "$_locked")" >&2
+        elif ! same_file "$(source_file "$_src" "$_dst")" "$repo_root/$_dst"; then
+            if [ "$(source_file "$_src" "$_dst")" != "$work/kit/$_src" ]; then
+                echo "drift: $_dst differs from the kit at $(short "$_locked") with $settings_additions" >&2
+            else
+                echo "drift: $_dst differs from the kit at $(short "$_locked")" >&2
+            fi
             _problems=$((_problems + 1))
         fi
     done < "$work/manifest"
@@ -181,6 +274,7 @@ sync() {
     _new=$(fetch_kit "$1" "$work/kit")
     overrides > "$work/overrides"
     manifest "$work/kit" > "$work/manifest"
+    prepare_settings
     # what the kit listed at the commit in the lock, so that a file it has dropped since can go
     : > "$work/old"
     if [ -f "$lock" ]; then
@@ -204,7 +298,7 @@ sync() {
         if [ ! -e "$repo_root/$_dst" ]; then
             _added=$((_added + 1))
             echo "added: $_dst"
-        elif same_file "$work/kit/$_src" "$repo_root/$_dst"; then
+        elif same_file "$(source_file "$_src" "$_dst")" "$repo_root/$_dst"; then
             _same=$((_same + 1))
             continue
         else
@@ -212,7 +306,7 @@ sync() {
             echo "changed: $_dst"
         fi
         mkdir -p "$(dirname -- "$repo_root/$_dst")"
-        cp "$work/kit/$_src" "$repo_root/$_dst"
+        cp "$(source_file "$_src" "$_dst")" "$repo_root/$_dst"
     done < "$work/manifest"
     while read -r _src _dst; do
         skipped "$_dst" && continue
