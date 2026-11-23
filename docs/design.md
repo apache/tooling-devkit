@@ -168,7 +168,8 @@ the kit's copy is updated by dependabot and a service calls it. Open in the trac
 
 ## 7. What a service adds is data it owns
 
-Accepted. Implemented for the gate in apache/tooling-devkit#11 (merged 2026-11-23).
+Accepted. Implemented for the gate in apache/tooling-devkit#11 (merged 2026-11-23), and for the pre-PR checklist
+in the change that follows it.
 
 **Why.** A shared file that must differ a little per service cannot be edited in the copy (1). `verify.py` was
 a gate engine with the stages, inputs and settings of tooling-agenda written in it as Python constants.
@@ -180,10 +181,22 @@ depends on (a file, the trailers of the branch's commits, or what a command prin
 is imported to run the gate, and a file that cannot be run is refused with every reason at once.
 `PYTEST_WORKERS`, `DEVKIT_PYTHON` and `PYTEST_ADDOPTS` stay in the engine, because the kit's own scripts set them.
 
+The pre-PR checklist (`scripts/pr-preflight.sh`) has the same shape: the machinery and the scan for who else is in
+the same files are the kit's, and the rules of a repository are `scripts/local/preflight.toml`, each with a
+title, the patterns that make it apply (to the paths a branch changes or to those it adds), optionally a pattern
+the lines it adds must match, and the lines it prints. The rules of the kit that hold everywhere stay in the
+script. The script runs on a host with `sh` and `git`, so a small standard-library helper
+(`scripts/ci/preflight_rules.py`) checks the file and hands the rules to the shell as lines. The helper runs
+only where there is a file.
+
 **Costs.** On tooling-agenda's tree, with its constants written as a `verify.toml`, five of the six stage keys
 are byte-equal to the old ones; the sixth, `test-python`, changes because the minutes corpus is a command now,
-and that stage runs once more. The same shape is wanted for rules for `pr-preflight.sh`, extra rules for the
-guard (`.claude/guard.local`, which may add a restriction and never remove one) and additions to
+and that stage runs once more. With tooling-agenda's seven rules written as a `preflight.toml`, the new script
+printed the same as its old one on 13 of 14 kinds of change; on the fourteenth the old script missed a new
+uncommitted helper file beside a component, and the new one reads it, as it does once it is committed. A
+repository with a rules file needs Python 3.11 or newer wherever it runs the checklist, and the script refuses
+to run without it: a checklist that dropped the rules it could not read would look complete and not be. The
+same shape is wanted for extra rules for the guard (`.claude/guard.local`, which may add a restriction and never remove one) and additions to
 `.claude/settings.json`. None is built.
 
 **Not done.** A Python module the service owns, imported by the engine: the most flexible, but the gate would

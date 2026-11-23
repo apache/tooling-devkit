@@ -23,6 +23,7 @@ scripts/ci/behaviour_selection.py
 scripts/ci/changed.py
 scripts/ci/fast_stage.py
 scripts/ci/fast_stage_record.py
+scripts/ci/preflight_rules.py
 scripts/ci/production_import.py
 scripts/ci/quality.py
 scripts/ci/quality_allowances.py
@@ -39,6 +40,7 @@ scripts/devkit-sync.sh
 scripts/e2e-container.sh
 scripts/e2e-typecheck.sh
 scripts/ensure-node-modules.sh
+scripts/pr-preflight.sh
 scripts/pr-review.sh
 scripts/pr-screenshots.sh
 scripts/run-dev.sh

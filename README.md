@@ -60,13 +60,18 @@ is a pull request in the kit: see "Changing a file that comes from the kit" in `
 
 The files come from tooling-agenda, with the service name and the variable prefix taken out. Not in the kit
 yet: the Action that opens a sync pull request, the CI job that runs the check in each repository, the
-extension points for what a repository needs in its own form, except the first, and `pr-preflight.sh`. See the
-tracking issue.
+extension points for what a repository needs in its own form, except the first two. See the tracking issue.
 
 The first extension point is `scripts/local/verify.toml`, a file a repository owns, in which it names the
 stages of its gate (`scripts/ci/verify.py`), the files and settings each reads, and what else they depend on.
 The file is data: the gate reads it with `tomllib` and imports nothing of the repository. The format is in the
 docstring of `verify.py`, and a file that cannot be run is refused with every reason at once.
+
+The second is `scripts/local/preflight.toml`, in which a repository adds rules to the checklist of
+`scripts/pr-preflight.sh`: a title, the paths that make a rule apply, and the lines it prints. A repository
+without the file has the rules of the kit. Reading the file needs Python 3.11 or newer on the machine that runs
+the script, and a file it cannot use stops the run. The format is in the docstring of
+`scripts/ci/preflight_rules.py`.
 
 CI workflows are not in the kit. Dependabot updates the pinned actions in the `.github/workflows/` of each
 repository, so a copy of a kit workflow would differ from the kit after every update, and the drift check
