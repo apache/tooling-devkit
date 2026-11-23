@@ -376,6 +376,10 @@ e2e_isolated() {
         DEVKIT_ISOLATED=1 DEVKIT_NODE_INSTALL=skip "$@" > "$work/out" 2>&1 || status=$?
 }
 
+# The preview keeps the name serve.py agrees to empty (state-e2e*), under a directory of its own beside its config.
+grep -q 's#state-e2e#state-preview/state-e2e#g' "$here/run-preview.sh" ||
+    fail "the preview state directory keeps a state-e2e name, which e2e/serve.py of a repository may insist on"
+
 # A pool of servers needs e2e/supervisor.py; without one it is refused before a runtime is looked for.
 status=0
 DEVKIT_E2E_WORKERS=2 PATH="$work/stubs:$PATH" HOME="$work/home" "$fake/scripts/e2e-container.sh" > "$work/out" 2>&1 || status=$?
