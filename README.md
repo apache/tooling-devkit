@@ -59,7 +59,13 @@ is a pull request in the kit: see "Changing a file that comes from the kit" in `
 
 The files come from tooling-agenda, with the service name and the variable prefix taken out. Not in the kit
 yet: the Action that opens a sync pull request, the CI job that runs the check in each repository, the
-extension points for what a repository needs in its own form, and `pr-preflight.sh`. See the tracking issue.
+extension points for what a repository needs in its own form, except the first, and `pr-preflight.sh`. See the
+tracking issue.
+
+The first extension point is `scripts/local/verify.toml`, a file a repository owns, in which it names the
+stages of its gate (`scripts/ci/verify.py`), the files and settings each reads, and what else they depend on.
+The file is data: the gate reads it with `tomllib` and imports nothing of the repository. The format is in the
+docstring of `verify.py`, and a file that cannot be run is refused with every reason at once.
 
 CI workflows are not in the kit. Dependabot updates the pinned actions in the `.github/workflows/` of each
 repository, so a copy of a kit workflow would differ from the kit after every update, and the drift check
@@ -72,8 +78,6 @@ What still belongs to tooling-agenda, and has to be made general:
 
 - `.claude/settings.json`: `Read(./agenda.yaml)`, and the `make container-minutes-reading` entries. They
   stay while there is no way for a service to add to the file, and do no harm in another repository.
-- `scripts/ci/verify.py`: `MINUTES_CORPUS` and the `corpus` stage, and the frontend fixtures under
-  `tests/data`.
 - `AGENTS.shared.md` names the nightly workflow of the behaviour record, which a service has to keep.
 - The variables that no script of the kit reads: the tests and the e2e specs of a service read
   `DEVKIT_E2E_URL`, `DEVKIT_E2E_HOST`, `DEVKIT_BEHAVIOUR_OUT` and others, so a service renames its own at

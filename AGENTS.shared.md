@@ -365,7 +365,8 @@ covers them all the same.
 `scripts/devkit-sync.sh <ref>` copies the files that the kit lists in `devkit.files` and writes the commit
 to `devkit.lock`. `scripts/devkit-sync.sh --check` compares each file with the kit at that commit. Not in
 the kit yet, and the next items of apache/tooling-migration#50: the Action that opens a sync pull
-request, the CI job that runs the check in each repository, and the extension points named below.
+request, the CI job that runs the check in each repository, and the extension points named below, all
+but the stages of the gate (`scripts/local/verify.toml`).
 
 - **Do not edit a copied file in this repository.** A copy that differs from the kit at the commit in
   `devkit.lock` is drift. The check fails on it, and CI does once the repository runs the check there.
@@ -373,7 +374,8 @@ request, the CI job that runs the check in each repository, and the extension po
   `scripts/devkit-sync.sh <ref>` here, or merge the sync pull request that the kit opens.
 - **If the drift check fails, a copy was edited.** Move the change to the kit, and run the sync again.
 - **If the change is urgent or only for this repository,** use the first of these that fits:
-  a value in `devkit.conf`; an extension point of the kit (a local file the shared file calls, such as
+  a value in `devkit.conf`; an extension point of the kit (a local file the shared file reads or calls,
+  such as `scripts/local/verify.toml`, where a repository names the stages of its gate, or
   `scripts/local/<name>.sh`, or extra guard rules in `.claude/guard.local`, which can add a restriction and
   cannot remove a shared rule); not merging the sync pull request yet, which is not drift because the
   check compares with the commit in `devkit.lock`; naming the file in `DEVKIT_SKIP` in `devkit.conf` and
