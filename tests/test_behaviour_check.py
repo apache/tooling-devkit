@@ -418,9 +418,7 @@ class TestCheck:
     def squashed(repo: pathlib.Path) -> tuple[str, str]:
         """A base, then a squash merge on main whose message holds its branch's trailer mid-message."""
         sha = commit(repo, "harness", HARNESS)
-        squash = (
-            "a change to the app (#7)\n\n* a change to the app\n\nBehaviour-Allow: a/x.txt\n\n---------\n\nCo-authored-by: t"
-        )
+        squash = "a change to the app (#7)\n\n* a change to the app\n\nBehaviour-Allow: a/x.txt\n\n---------\n\nCo-authored-by: t"
         return sha, commit(repo, squash, {"app/x.py": "2"})
 
     def test_a_full_run_reads_what_the_pull_requests_allowed(

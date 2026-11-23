@@ -202,4 +202,3 @@ class TestCompared:
         assert "tasks/x.txt" not in selection.compared(self.files, {}, chosen_parts)
         kept = selection.compared(self.files, {}, chosen_parts, {"task ": "tasks"})
         assert set(kept) == {"tasks/x.txt", "routes.txt", "normalisation/routes.txt"}
-

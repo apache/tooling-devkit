@@ -232,6 +232,14 @@ has its own.
 **Not done.** Keeping the setup in the workflow: it could not be run on a machine, and it was not defined where
 a reader of the repository would look.
 
+**Lint.** `make lint`, part of `make test`, runs `ruff format --check` and shellcheck on the kit's files with the
+settings of the services' hooks (line length 120, the four optional shellcheck checks, `-x`), and `ruff` is pinned
+to the version the services lock. The kit's files had been written in tooling-agenda, then renamed, and the
+rename moved line breaks: when tooling-secretary-records took them, its `make check` failed on one SC2154, one
+SC2249, one SC1007 and the format of one file, and `ruff format` of the kit now changes six files. A file that
+fails a service's hook is a drift that the service cannot fix in its copy (1).
+
+
 ## 9. Seeded from one repository, made general by applying it to others
 
 Accepted. Done for the first version in apache/tooling-devkit#1, and again in apache/tooling-devkit#3 and

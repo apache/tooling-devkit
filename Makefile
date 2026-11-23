@@ -2,6 +2,7 @@
 # its own, with its own targets, and `devkit.files` does not list this one.
 #
 #   make test           everything below
+#   make lint           the files of the kit, as the hooks of a service read them
 #   make test-shell     the shell tests: the guard's, and those of the scripts
 #   make test-python    the Python tests, and the scripts of scripts/ci compile and import
 #
@@ -15,9 +16,17 @@ SHELL_TESTS = .claude/hooks/guard-bash.test.sh $(wildcard scripts/*.test.sh scri
 # library, since that is all the kit's scripts may need.
 CI_MODULES = $(basename $(notdir $(wildcard scripts/ci/*.py)))
 
-.PHONY: test test-shell test-python
+.PHONY: test test-shell test-python lint
 
-test: test-shell test-python
+test: lint test-shell test-python
+
+# The shellcheck options are those of the services' hook, over the scripts they take and not the tests:
+# the sharper checks that catch a bug, and `-x` to follow what a script sources. `ruff format` has the line
+# length of the services; a file that passes here is one their hooks leave as it is.
+lint:
+	uv run --frozen ruff format --check scripts tests
+	uv run --frozen shellcheck --enable=quote-safe-variables,add-default-case,deprecate-which,avoid-nullary-conditions -x \
+		$(filter-out %.test.sh,$(shell git ls-files '*.sh'))
 
 test-shell:
 	@failed=0; \

@@ -10,12 +10,15 @@ dependencies = []
 
 # What the tests need and nothing else: the scripts under test use the standard library, and
 # pytest-xdist is there because the tests of the selection audit run a real `pytest -n 2`, and grimp
-# because the behaviour selection reads a package's imports with it.
+# because the behaviour selection reads a package's imports with it. ruff and shellcheck check the kit's
+# files the way the services' hooks do, so that a file that passes here does not fail there.
 [dependency-groups]
 test = [
     "pytest>=9.1.1",
     "pytest-xdist>=3.8",
     "grimp>=3.19",
+    "ruff==0.15.20",
+    "shellcheck-py>=0.11.0.1",
 ]
 
 [tool.uv]
@@ -25,3 +28,8 @@ default-groups = ["test"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+# The services' settings, so that `ruff format` leaves a kit file as it is.
+[tool.ruff]
+line-length = 120
+target-version = "py314"
