@@ -29,7 +29,16 @@ default-groups = ["test"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
-# The services' settings, so that `ruff format` leaves a kit file as it is.
+# The services' settings, so that `ruff format` and `ruff check` leave a kit file as it is.
 [tool.ruff]
 line-length = 120
 target-version = "py314"
+
+[tool.ruff.lint]
+ignore = ["S603", "S607"]
+select = ["I", "E", "W", "F", "ASYNC", "B", "G", "LOG", "N", "RUF", "S", "TID", "TC", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S108", "S701", "ASYNC109", "ASYNC240"]
+"scripts/**" = ["ASYNC240"]
+"**/{tests}/*" = ["E501", "F841"]

@@ -28,14 +28,16 @@ id rather than read.
 
 from __future__ import annotations
 
-import argparse
 import dataclasses
 import json
-import pathlib
 import re
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from selection_audit import OUTCOMES, VERDICTS, VERSION, Failure
+
+if TYPE_CHECKING:
+    import argparse
+    import pathlib
 
 MARK: Final = "<!-- selection-audit -->"
 """The first line of the tracking issue's body: the workflow edits no issue whose body does not start so."""

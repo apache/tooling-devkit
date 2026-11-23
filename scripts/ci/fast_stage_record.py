@@ -29,10 +29,12 @@ from __future__ import annotations
 
 import datetime
 import json
-import pathlib
 import subprocess
 import xml.etree.ElementTree as ElementTree
-from typing import Final
+from typing import TYPE_CHECKING, Final
+
+if TYPE_CHECKING:
+    import pathlib
 
 STATE: Final = "state/fast-stage"
 GREEN: Final = f"{STATE}/green.json"

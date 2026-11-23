@@ -103,7 +103,7 @@ What still belongs to tooling-agenda, and has to be made general:
 
 ```sh
 make test          # lint, the shell tests, the Python tests, and the scripts of scripts/ci compile and import
-make lint          # `ruff format --check` and shellcheck, with the settings of the services' hooks
+make lint          # `ruff format --check`, `ruff check` and shellcheck, with the settings of the services' hooks
 make test-shell
 make test-python
 ```
