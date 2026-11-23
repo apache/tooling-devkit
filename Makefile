@@ -21,9 +21,10 @@ CI_MODULES = $(basename $(notdir $(wildcard scripts/ci/*.py)))
 test: lint test-shell test-python
 
 # The hooks of the services that act on the files the kit shares (.pre-commit-config.yaml), over every file:
-# a file that passes here is one their `make check` leaves as it is.
+# a file that passes here is one their `make check` leaves as it is. `changed.py --all` rather than `prek run
+# --all-files`, which leaves out a file that is not tracked yet: the one a change adds is the one to check.
 lint:
-	uv run --frozen prek run --all-files
+	uv run --frozen python scripts/ci/changed.py --all
 
 test-shell:
 	@failed=0; \

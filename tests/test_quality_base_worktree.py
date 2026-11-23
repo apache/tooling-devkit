@@ -25,10 +25,10 @@ import subprocess
 import sys
 from typing import TYPE_CHECKING
 
-import pytest
-
 if TYPE_CHECKING:
     import types
+
+    import pytest
 
 _CI = pathlib.Path(__file__).resolve().parent.parent / "scripts" / "ci"
 sys.path.insert(0, str(_CI))
