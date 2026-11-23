@@ -93,6 +93,23 @@ says() {
     printf '%s' "$output" | grep -qE "$1"
 }
 
+# --- the dependency rule reads everything that pins a toolchain -----------------------
+new_repo pins
+for pin in pyproject.toml uv.lock .python-version .tool-versions; do
+    git -C "$repo" checkout -q -B "pin" origin/main
+    printf 'x\n' > "$repo/$pin"
+    git -C "$repo" add "$pin"
+    git -C "$repo" commit -qm "change $pin"
+    run_in "$repo"
+    says '^  dependencies$' || fail "a change to $pin did not print the dependencies block" "$output"
+done
+git -C "$repo" checkout -q -B "pin" origin/main
+printf 'x\n' > "$repo/notes.txt"
+git -C "$repo" add notes.txt
+git -C "$repo" commit -qm 'notes'
+run_in "$repo"
+says '^  dependencies$' && fail 'a change to a note printed the dependencies block' "$output"
+
 # --- a branch that shares a file is named; one that shares none is not -----------------
 # The base case. It would have caught nothing so far, and every case after it is a way
 # this one has been true while the answer was still wrong.
