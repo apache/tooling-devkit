@@ -191,11 +191,20 @@ script. The script runs on a host with `sh` and `git`, so a small standard-libra
 (`scripts/ci/preflight_rules.py`) checks the file and hands the rules to the shell as lines. The helper runs
 only where there is a file.
 
+The behaviour comparison has the third shape: `scripts/local/behaviour.toml` adds globs to the lists of the kit
+(`everything_when`, the paths whose change records everything; `harness_files`, what the record is made with)
+and prefixes to the tests that run whole (`[whole]`). `scripts/ci/behaviour_rules.py` reads it, and only adds:
+a glob or a prefix that the kit has is refused, so a copy of the kit's list cannot go stale in a service. The
+kit's lists are the ones that hold in every service; `schema/**`, `tests/test-config.yaml`, `tests/data/wc/*`
+and `tests/data/static_assets/*` were tooling-agenda's, and the `task ` and `artefact ` tests too. The tests of
+the comparison (`tests/test_behaviour_*.py`) are the kit's. The tests of a service's own harness, such as
+`tests/behaviour/executed.py`, stay in the service.
+
 **Costs.** On tooling-agenda's tree, with its constants written as a `verify.toml`, five of the six stage keys
 are byte-equal to the old ones; the sixth, `test-python`, changes because the minutes corpus is a command now,
 and that stage runs once more. With tooling-agenda's seven rules written as a `preflight.toml`, the new script
 printed the same as its old one on 13 of 14 kinds of change; on the fourteenth the old script missed a new
-uncommitted helper file beside a component, and the new one reads it, as it does once it is committed. A
+uncommitted helper file beside a component, and the new one reads it, as it does once it is committed. The three lists of tooling-agenda's behaviour scripts are the kit's plus a `behaviour.toml` of two `everything_when` globs, three `harness_files` globs and two `[whole]` prefixes, with nothing missing on either side (compared by loading both sets of scripts). A
 repository with a rules file needs Python 3.11 or newer wherever it runs the checklist, and the script refuses
 to run without it: a checklist that dropped the rules it could not read would look complete and not be. The
 same shape is wanted for extra rules for the guard (`.claude/guard.local`, which may add a restriction and never remove one). It is not built. Additions to `.claude/settings.json` are built: see 12.

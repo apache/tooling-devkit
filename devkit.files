@@ -19,6 +19,7 @@ scripts/ci/bases.py
 scripts/ci/behaviour.py
 scripts/ci/behaviour_gate.py
 scripts/ci/behaviour_pulls.py
+scripts/ci/behaviour_rules.py
 scripts/ci/behaviour_selection.py
 scripts/ci/changed.py
 scripts/ci/fast_stage.py

@@ -9,11 +9,13 @@ requires-python = ">=3.14"
 dependencies = []
 
 # What the tests need and nothing else: the scripts under test use the standard library, and
-# pytest-xdist is there because the tests of the selection audit run a real `pytest -n 2`.
+# pytest-xdist is there because the tests of the selection audit run a real `pytest -n 2`, and grimp
+# because the behaviour selection reads a package's imports with it.
 [dependency-groups]
 test = [
     "pytest>=9.1.1",
     "pytest-xdist>=3.8",
+    "grimp>=3.19",
 ]
 
 [tool.uv]
