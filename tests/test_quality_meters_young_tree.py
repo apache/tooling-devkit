@@ -62,7 +62,14 @@ def test_a_source_path_that_is_not_there_is_left_out(empty_tree: pathlib.Path) -
 
 @pytest.mark.parametrize(
     "meter",
-    ["python_cyclomatic", "python_cognitive", "python_dead_code", "frontend_complexity", "frontend_dead_code", "duplication"],
+    [
+        "python_cyclomatic",
+        "python_cognitive",
+        "python_dead_code",
+        "frontend_complexity",
+        "frontend_dead_code",
+        "duplication",
+    ],
 )
 def test_a_meter_reads_nothing_where_there_is_nothing_for_it(empty_tree: pathlib.Path, meter: str) -> None:
     assert getattr(meters, meter)() == {}

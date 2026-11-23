@@ -94,9 +94,7 @@ def _conf(key: str, valid: re.Pattern[str]) -> str:
     raise SystemExit(f"devkit.conf has no {key}")
 
 
-REPOSITORY: Final = os.environ.get("GITHUB_REPOSITORY") or _conf(
-    "DEVKIT_REPOSITORY", re.compile(r"[\w.-]+/[\w.-]+")
-)
+REPOSITORY: Final = os.environ.get("GITHUB_REPOSITORY") or _conf("DEVKIT_REPOSITORY", re.compile(r"[\w.-]+/[\w.-]+"))
 API: Final = os.environ.get("GITHUB_API_URL", "https://api.github.com")
 SERVER: Final = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
 MERGED_AS: Final = re.compile(r"\(#(\d+)\)$")

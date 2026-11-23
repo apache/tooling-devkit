@@ -206,9 +206,7 @@ def test_a_stage_that_reads_some_of_the_tree_runs_again_only_for_those_files(rep
 
 def test_a_change_to_what_else_a_stage_depends_on_runs_it_again(repo) -> None:
     """The base it compares against, say: a file that is not part of the tree."""
-    config = verify.Config(
-        stages=(), extras={"base": verify.Extra("file", path="state/base.json")}, environment=()
-    )
+    config = verify.Config(stages=(), extras={"base": verify.Extra("file", path="state/base.json")}, environment=())
     based = verify.Stage("one", extras=("base",))
     (repo / "state" / "base.json").write_text("recorded with abc\n")
     _verdict(based, config)
@@ -268,23 +266,29 @@ def test_fresh_runs_a_stage_that_passed(repo) -> None:
 
 
 def test_the_stages_run_at_the_same_time(repo) -> None:
-    config = _config(repo, """
+    config = _config(
+        repo,
+        """
         [[stages]]
         name = "first"
         [[stages]]
         name = "second"
-    """)
+    """,
+    )
 
     assert verify.main(["--config", str(config)]) == 0
 
 
 def test_the_gate_fails_when_one_stage_does_and_runs_the_others_all_the_same(repo, capsys) -> None:
-    config = _config(repo, """
+    config = _config(
+        repo,
+        """
         [[stages]]
         name = "fails"
         [[stages]]
         name = "one"
-    """)
+    """,
+    )
 
     assert verify.main(["--config", str(config)]) == 1
     assert sorted(_runs(repo)) == ["fails", "one"]
@@ -292,22 +296,28 @@ def test_the_gate_fails_when_one_stage_does_and_runs_the_others_all_the_same(rep
 
 
 def test_one_stage_named_runs_alone(repo) -> None:
-    config = _config(repo, """
+    config = _config(
+        repo,
+        """
         [[stages]]
         name = "one"
         [[stages]]
         name = "fails"
-    """)
+    """,
+    )
 
     assert verify.main(["--config", str(config), "one"]) == 0
     assert _runs(repo) == ["one"]
 
 
 def test_a_stage_the_file_does_not_name_is_refused_with_the_ones_it_does(repo, capsys) -> None:
-    config = _config(repo, """
+    config = _config(
+        repo,
+        """
         [[stages]]
         name = "one"
-    """)
+    """,
+    )
 
     with pytest.raises(SystemExit):
         verify.main(["--config", str(config), "two"])
@@ -426,13 +436,33 @@ def test_a_file_that_says_what_the_stages_are_is_read(repo) -> None:
         pytest.param('[[stages]]\nname = "../up"\n', "has a name that is a make target", id="a name that is a path"),
         pytest.param('[[stages]]\nname = "a"\n[[stages]]\nname = "a"\n', "stage 2 (a) is named twice", id="twice"),
         pytest.param('[[stages]]\nname = "a"\nextras = ["x"]\n', "no extra named x", id="an extra that is not defined"),
-        pytest.param('[[stages]]\nname = "a"\npaths = "assets/"\n', "paths is a list of strings", id="paths as a string"),
-        pytest.param('[[stages]]\nname = "a"\nlongest = "yes"\n', "longest is true or false", id="a flag that is not one"),
-        pytest.param('environment = ["A B"]\n[[stages]]\nname = "a"\n', "A B is not a variable name", id="a bad variable"),
-        pytest.param('[extras.x]\nkind = "other"\n[[stages]]\nname = "a"\n', "extras.x has a kind of", id="a kind it lacks"),
-        pytest.param('[extras.x]\nkind = "file"\n[[stages]]\nname = "a"\n', "extras.x gives path as a string", id="a file with no path"),
-        pytest.param('[extras.x]\nkind = "command"\n[[stages]]\nname = "a"\n', "extras.x gives run as a string", id="a command with none"),
-        pytest.param('[extras.x]\nkind = "trailers"\npath = "p"\n[[stages]]\nname = "a"\n', "extras.x: no path for a trailers", id="a key the kind has no use for"),
+        pytest.param(
+            '[[stages]]\nname = "a"\npaths = "assets/"\n', "paths is a list of strings", id="paths as a string"
+        ),
+        pytest.param(
+            '[[stages]]\nname = "a"\nlongest = "yes"\n', "longest is true or false", id="a flag that is not one"
+        ),
+        pytest.param(
+            'environment = ["A B"]\n[[stages]]\nname = "a"\n', "A B is not a variable name", id="a bad variable"
+        ),
+        pytest.param(
+            '[extras.x]\nkind = "other"\n[[stages]]\nname = "a"\n', "extras.x has a kind of", id="a kind it lacks"
+        ),
+        pytest.param(
+            '[extras.x]\nkind = "file"\n[[stages]]\nname = "a"\n',
+            "extras.x gives path as a string",
+            id="a file with no path",
+        ),
+        pytest.param(
+            '[extras.x]\nkind = "command"\n[[stages]]\nname = "a"\n',
+            "extras.x gives run as a string",
+            id="a command with none",
+        ),
+        pytest.param(
+            '[extras.x]\nkind = "trailers"\npath = "p"\n[[stages]]\nname = "a"\n',
+            "extras.x: no path for a trailers",
+            id="a key the kind has no use for",
+        ),
     ],
 )
 def test_what_cannot_be_run_is_refused_and_says_why(repo, text, says) -> None:

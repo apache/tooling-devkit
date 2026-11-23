@@ -17,6 +17,7 @@
 # What devkit.conf gives `$1`, or nothing. Read with sed rather than sourced, so that a file of
 # the repository is never run by a script that runs before anything else has been checked.
 devkit_conf() {
+    # shellcheck disable=SC2154 # script_dir is set by the script that sources this one
     sed -n "s/^$1=//p" "$script_dir/../devkit.conf" 2>/dev/null | head -n 1
 }
 
@@ -29,6 +30,7 @@ case $DEVKIT_SERVICE in
         echo "devkit.conf has no usable DEVKIT_SERVICE (lower case letters, digits, - and _): $script_dir/../devkit.conf" >&2
         exit 1
         ;;
+    *) : ;;
 esac
 # Where the container mounts the working tree.
 # shellcheck disable=SC2034

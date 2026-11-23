@@ -34,7 +34,7 @@
 
 set -eu
 
-assets=${1:-$(CDPATH= cd -- "$(dirname -- "$0")/../assets" && pwd)}
+assets=${1:-$(CDPATH='' cd -- "$(dirname -- "$0")/../assets" && pwd)}
 stamp="$assets/node_modules/.devkit-install-stamp"
 lock="$assets/node_modules/.devkit-install-lock"
 

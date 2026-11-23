@@ -106,11 +106,29 @@ def test_a_file_with_no_rules_has_none(tmp_path) -> None:
         pytest.param('[[rules]]\ntitle = "t"\ntouches = "a"\nadds = "b"\nsay = ["x"]\n', "and not both", id="both"),
         pytest.param('[[rules]]\ntitle = "t"\ntouches = "a"\n', "say is a list of lines", id="no lines"),
         pytest.param('[[rules]]\ntitle = "t"\ntouches = "a"\nsay = []\n', "say is a list of lines", id="empty lines"),
-        pytest.param('[[rules]]\ntitle = "t"\ntouches = "a"\nsay = ["x"]\nfoo = 1\n', "rule 1 (t) has no foo", id="a key it lacks"),
-        pytest.param('[[rules]]\ntitle = "t"\ntouches = []\nsay = ["x"]\n', "touches is a pattern, or a list", id="no patterns"),
-        pytest.param('[[rules]]\ntitle = "t"\nadds = "a"\nreads = "b"\nsay = ["x"]\n', "reads goes with `touches`", id="reads on adds"),
-        pytest.param('[[rules]]\ntitle = "t"\ntouches = "a"\nreads_in = "b"\nsay = ["x"]\n', "reads_in goes with `reads`", id="reads_in alone"),
-        pytest.param('[[rules]]\ntitle = "t"\ntouches = "a"\nsay = [1]\n', "say is a non-empty string", id="a line that is not text"),
+        pytest.param(
+            '[[rules]]\ntitle = "t"\ntouches = "a"\nsay = ["x"]\nfoo = 1\n',
+            "rule 1 (t) has no foo",
+            id="a key it lacks",
+        ),
+        pytest.param(
+            '[[rules]]\ntitle = "t"\ntouches = []\nsay = ["x"]\n', "touches is a pattern, or a list", id="no patterns"
+        ),
+        pytest.param(
+            '[[rules]]\ntitle = "t"\nadds = "a"\nreads = "b"\nsay = ["x"]\n',
+            "reads goes with `touches`",
+            id="reads on adds",
+        ),
+        pytest.param(
+            '[[rules]]\ntitle = "t"\ntouches = "a"\nreads_in = "b"\nsay = ["x"]\n',
+            "reads_in goes with `reads`",
+            id="reads_in alone",
+        ),
+        pytest.param(
+            '[[rules]]\ntitle = "t"\ntouches = "a"\nsay = [1]\n',
+            "say is a non-empty string",
+            id="a line that is not text",
+        ),
     ],
 )
 def test_what_cannot_be_used_is_refused_and_says_why(tmp_path, text, says) -> None:

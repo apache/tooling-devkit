@@ -80,6 +80,7 @@ WHOLE: Final = {"scenario ": "scenarios"}
 """The tests whose parts run as one - each on what the one before left - by the prefix of their parts and
 the directory of their files: one part selected records them all."""
 
+
 @dataclasses.dataclass(frozen=True)
 class Selection:
     everything: bool
