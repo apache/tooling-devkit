@@ -243,7 +243,7 @@ cat > "$additions" << 'JSON'
 {"permissions": {"allow": ["Bash(make c:*)", "Bash(make a:*)", "Bash(make c:*)"], "deny": ["Read(./secret.yaml)"]}}
 JSON
 sync_to "$s1"
-[ "$status" -eq 0 ] || fail "a sync with additions runs" 
+[ "$status" -eq 0 ] || fail "a sync with additions runs"
 [ "$(field 'd["permissions"]["allow"]')" = '["Bash(make a:*)", "Bash(make b:*)", "Bash(make c:*)"]' ] ||
     fail "the additions to allow follow the kit's entries, once each: $(field 'd["permissions"]["allow"]')"
 [ "$(field 'd["permissions"]["deny"]')" = '["Read(./.env)", "Read(./secret.yaml)"]' ] ||
@@ -252,7 +252,7 @@ sync_to "$s1"
     fail "the hook that registers the guard is the kit's, untouched"
 [ -f "$additions" ] && grep -q 'secret.yaml' "$additions" || fail "the additions file of the repository is left as it was"
 check
-[ "$status" -eq 0 ] || fail "the check passes right after a sync with additions" 
+[ "$status" -eq 0 ] || fail "the check passes right after a sync with additions"
 
 # the file is drift from the base and the additions alike
 printf '\n' >> "$settings"

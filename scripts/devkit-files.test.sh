@@ -20,7 +20,7 @@ fail() {
 # What is the kit's own and is not taken by a service: the files named here, and every path that matches
 # one of the patterns after them. The tests are the kit's CI's, and a service has no use for a copy (see the
 # README); docs/ records why the kit is the way it is.
-kit_only='.asf.yaml .gitignore .python-version .tool-versions Makefile pyproject.toml uv.lock .github/dependabot.yml .github/workflows/test.yml LICENSE README.md AGENTS.md CLAUDE.md devkit.conf devkit.files'
+kit_only='.asf.yaml .markdownlint-cli2.jsonc .pre-commit-config.yaml .gitignore .python-version .tool-versions Makefile pyproject.toml uv.lock .github/dependabot.yml .github/workflows/test.yml LICENSE README.md AGENTS.md CLAUDE.md devkit.conf devkit.files'
 kit_only_patterns='*.test.sh tests/* docs/*'
 # What cannot carry the line that says where to change it: JSON and a license template have no comment.
 no_header='.claude/settings.json scripts/ci/LICENSE-template.txt'

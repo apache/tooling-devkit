@@ -2,7 +2,7 @@
 # its own, with its own targets, and `devkit.files` does not list this one.
 #
 #   make test           everything below
-#   make lint           the files of the kit, as the hooks of a service read them
+#   make lint           the hooks of the services over the kit's files (prek)
 #   make test-shell     the shell tests: the guard's, and those of the scripts
 #   make test-python    the Python tests, and the scripts of scripts/ci compile and import
 #
@@ -20,14 +20,10 @@ CI_MODULES = $(basename $(notdir $(wildcard scripts/ci/*.py)))
 
 test: lint test-shell test-python
 
-# The shellcheck options are those of the services' hook, over the scripts they take and not the tests:
-# the sharper checks that catch a bug, and `-x` to follow what a script sources. `ruff format` and `ruff check` have the
-# line length and the rules of the services; a file that passes here is one their hooks leave as it is.
+# The hooks of the services that act on the files the kit shares (.pre-commit-config.yaml), over every file:
+# a file that passes here is one their `make check` leaves as it is.
 lint:
-	uv run --frozen ruff format --check scripts tests
-	uv run --frozen ruff check scripts tests
-	uv run --frozen shellcheck --enable=quote-safe-variables,add-default-case,deprecate-which,avoid-nullary-conditions -x \
-		$(filter-out %.test.sh,$(shell git ls-files '*.sh'))
+	uv run --frozen prek run --all-files
 
 test-shell:
 	@failed=0; \

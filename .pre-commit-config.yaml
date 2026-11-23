@@ -1,0 +1,57 @@
+# The hooks of the services that act on the files the kit shares, with the same versions and settings, so
+# that a file which passes here is one their `make check` leaves as it is. `make lint` runs them over every
+# file. The hooks that read what only a service has (templates, the frontend, the lock) are not here.
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v6.0.0
+  hooks:
+    - id: check-toml
+    - id: check-yaml
+    - id: end-of-file-fixer
+    - id: mixed-line-ending
+    - id: trailing-whitespace
+    - id: detect-private-key
+- repo: https://github.com/Lucas-C/pre-commit-hooks
+  rev: v1.5.6
+  hooks:
+    - id: insert-license
+      name: Add license for all Python files
+      files: ^(scripts|tests)/.*\.py$
+      args:
+        - --comment-style
+        - "|#|"
+        - --license-filepath
+        - scripts/ci/LICENSE-template.txt
+        - --fuzzy-match-generates-todo
+- repo: https://github.com/DavidAnson/markdownlint-cli2
+  rev: v0.20.0
+  hooks:
+    - id: markdownlint-cli2
+- repo: https://github.com/shellcheck-py/shellcheck-py
+  rev: v0.11.0.1
+  hooks:
+  -   id: shellcheck
+      # the sharper checks that catch a bug rather than state a preference, and -x to follow what a script
+      # sources; the services' own comment says why each is there
+      args:
+        - --enable=quote-safe-variables,add-default-case,deprecate-which,avoid-nullary-conditions
+        - -x
+      # the tests are the kit's and a service does not take them
+      exclude: \.test\.sh$
+- repo: https://github.com/woodruffw/zizmor-pre-commit
+  rev: v1.22.0
+  hooks:
+    - id: zizmor
+      args: [ --min-severity, low ]
+- repo: local
+  hooks:
+    - id: ruff
+      name: Ruff Linter
+      entry: uv run --frozen ruff check --fix
+      language: system
+      types: [python]
+    - id: ruff-format
+      name: Ruff Formatter
+      entry: uv run --frozen ruff format --force-exclude
+      language: system
+      types: [python]
