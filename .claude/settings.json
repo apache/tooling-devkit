@@ -2,8 +2,6 @@
   "permissions": {
     "allow": [
       "Bash(make container-check:*)",
-      "Bash(make container-minutes-reading:*)",
-      "Bash(make container-minutes-reading-base:*)",
       "Bash(make container-quality:*)",
       "Bash(make container-quality-base:*)",
       "Bash(make container-snapshot:*)",
@@ -46,7 +44,6 @@
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",
-      "Read(./agenda.yaml)",
       "Read(./apptoken.txt)",
       "Read(./config.yaml)",
       "Read(./state/**)",

@@ -15,7 +15,7 @@ The files sit at the paths a service repository uses for them.
 | `AGENTS.shared.md` | the rules every repository shares; a repository's own `AGENTS.md` reads it first |
 | `.claude/hooks/guard-bash.sh` | the guard that holds the rules in `AGENTS.shared.md` |
 | `.claude/commands/` | the pre-PR adversarial pass, the end-to-end run and the screenshots |
-| `.claude/settings.json` | the permission allowlist and the hook registration |
+| `.claude/settings.json` | the permission allowlist and the hook registration; a service adds permissions in `.claude/settings.additions.json` |
 | `scripts/` | the container wrappers, the worktree scripts, the review reader and the CI helpers, among them the fast local test stage (`scripts/ci/fast_stage.py`) |
 | `tests/` | the Python tests of the kit's scripts: the fast stage, the selection audit and the quality meters |
 | `.github/actions/` | the apt-install action |
@@ -60,7 +60,7 @@ is a pull request in the kit: see "Changing a file that comes from the kit" in `
 
 The files come from tooling-agenda, with the service name and the variable prefix taken out. Not in the kit
 yet: the Action that opens a sync pull request, the CI job that runs the check in each repository, the
-extension points for what a repository needs in its own form, except the first two. See the tracking issue.
+extension points for what a repository needs in its own form, except the first three. See the tracking issue.
 
 The first extension point is `scripts/local/verify.toml`, a file a repository owns, in which it names the
 stages of its gate (`scripts/ci/verify.py`), the files and settings each reads, and what else they depend on.
@@ -73,6 +73,12 @@ without the file has the rules of the kit. Reading the file needs Python 3.11 or
 the script, and a file it cannot use stops the run. The format is in the docstring of
 `scripts/ci/preflight_rules.py`.
 
+The third is `.claude/settings.additions.json`, in which a repository adds permissions (`allow`, `deny`,
+`ask`) to the allowlist of the kit. The sync merges them into `.claude/settings.json`: the entries of the kit
+first, then those of the file, each once. Nothing else can be added, and the hooks stay as the kit has them. A
+repository with the file needs Python 3.11 or newer where it runs the sync, and a file the sync cannot use is
+refused with every reason at once. See `docs/design.md`, 12.
+
 CI workflows are not in the kit. Dependabot updates the pinned actions in the `.github/workflows/` of each
 repository, so a copy of a kit workflow would differ from the kit after every update, and the drift check
 would fail. The four workflows of tooling-agenda also hold what belongs to one service: the `subversion`
@@ -82,8 +88,6 @@ service keeps its own workflows until there is a way to share them.
 
 What still belongs to tooling-agenda, and has to be made general:
 
-- `.claude/settings.json`: `Read(./agenda.yaml)`, and the `make container-minutes-reading` entries. They
-  stay while there is no way for a service to add to the file, and do no harm in another repository.
 - `AGENTS.shared.md` names the nightly workflow of the behaviour record, which a service has to keep.
 - The variables that no script of the kit reads: the tests and the e2e specs of a service read
   `DEVKIT_E2E_URL`, `DEVKIT_E2E_HOST`, `DEVKIT_BEHAVIOUR_OUT` and others, so a service renames its own at

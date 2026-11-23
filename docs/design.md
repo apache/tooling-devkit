@@ -19,6 +19,7 @@ that is replaced stays, with a line that says what replaced it. Say only what wa
 9. [Seeded from one repository, made general by applying it to others](#9-seeded-from-one-repository-made-general-by-applying-it-to-others)
 10. [A file of the kit refers to nothing outside the kit](#10-a-file-of-the-kit-refers-to-nothing-outside-the-kit)
 11. [What a make wrapper may be given](#11-what-a-make-wrapper-may-be-given)
+12. [A service adds permissions in a file, merged at sync](#12-a-service-adds-permissions-in-a-file-merged-at-sync)
 
 ## 1. One source, copies in the services
 
@@ -85,7 +86,7 @@ how the drift started.
   is taken, so a file the kit adds reaches every repository by default.
 - The first line of a copy says where to change it. It is in the kit's own file, so a copy stays
   byte-identical. A file that cannot carry a comment (`.claude/settings.json`, the license template) has none,
-  and the check covers it all the same.
+  and the check covers it all the same. `.claude/settings.json` is the one file a sync builds: see 12.
 - Files are compared with `git diff --no-index`, which also sees a lost executable bit: `cmp` is not in every
   container, and `git` is needed anyway. The check reads the real kit at the locked commit, not hashes in the
   lock, because a hash edited together with its file would hide the drift.
@@ -197,8 +198,7 @@ printed the same as its old one on 13 of 14 kinds of change; on the fourteenth t
 uncommitted helper file beside a component, and the new one reads it, as it does once it is committed. A
 repository with a rules file needs Python 3.11 or newer wherever it runs the checklist, and the script refuses
 to run without it: a checklist that dropped the rules it could not read would look complete and not be. The
-same shape is wanted for extra rules for the guard (`.claude/guard.local`, which may add a restriction and never remove one) and additions to
-`.claude/settings.json`. None is built.
+same shape is wanted for extra rules for the guard (`.claude/guard.local`, which may add a restriction and never remove one). It is not built. Additions to `.claude/settings.json` are built: see 12.
 
 **Not done.** A Python module the service owns, imported by the engine: the most flexible, but the gate would
 run the repository's own code, and a mistake in it is a traceback. The constants kept in the kit's copy: every
@@ -300,3 +300,30 @@ That is a pull request to the kit, reviewed by the Tooling PMC, which is right: 
 `SHELL` or `PATH`, whose plain value runs code, which is the reason of 4. A list read from the repository's
 `Makefile`, for the same reason. A pattern such as `DEVKIT_*` in place of the names: a pattern is what let
 `DEVKIT_X$(...)` and `DEVKIT_X!` through.
+
+## 12. A service adds permissions in a file, merged at sync
+
+**Decided.** `.claude/settings.json` of the kit holds only what every service needs. A service that needs
+more writes `.claude/settings.additions.json`, with a `permissions` object that has `allow`, `deny` or `ask`,
+each a list of non-empty strings. `scripts/devkit-sync.sh` writes `.claude/settings.json` as the kit's file
+with the additions put after the entries of the kit, each entry once. The service owns the additions file and
+the sync never changes it.
+
+**Why.** Claude Code reads one committed project file, so the additions have to be in that file. The first
+entries that were tooling-agenda's own (`Read(./agenda.yaml)` and two `make container-minutes-reading`
+targets) were in the kit only because the file had no other place for them. They are not in the kit now.
+
+- Only `permissions` can be added. The `hooks` are the kit's: an addition there could turn the guard off. An
+  allow entry only skips a prompt, and the guard still runs; a deny entry of the kit stays, because deny
+  beats allow.
+- The check builds the same file from the kit at the locked commit and the additions, and compares it with the
+  copy. An edit of the copy is drift, and so is a change of the additions that was not synced. The message
+  names the additions file.
+- The merge code is in the sync script, so the sync runs no code it fetched. It needs `python3`, and only
+  where an additions file exists; the name of the program can be set with `DEVKIT_SYNC_PYTHON`, which the
+  tests use. A file the sync cannot use stops it, with every reason named.
+- `DEVKIT_SKIP` of `.claude/settings.json` ignores the additions file, as it does for any file.
+- A repository must not list `.claude/settings.additions.json` in `devkit.files`; the sync refuses it.
+
+**Not done.** A second settings file for the service (`settings.local.json` is personal and ignored). Merging
+`hooks` or `env`. An additions file in the kit's own format with a header: JSON has no comment.
