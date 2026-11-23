@@ -75,6 +75,7 @@ Accepted. apache/tooling-devkit#4.
 how the drift started.
 
 **Decided.**
+
 - `devkit.files` in the kit lists what a service may take: a path, or `source destination`. What the kit holds
   and does not list is the kit's own.
 - `devkit.lock` in a service holds the kit commit it took, and `override <path> <issue> until <YYYY-MM-DD>`
@@ -196,7 +197,7 @@ The behaviour comparison has the third shape: `scripts/local/behaviour.toml` add
 and prefixes to the tests that run whole (`[whole]`). `scripts/ci/behaviour_rules.py` reads it, and only adds:
 a glob or a prefix that the kit has is refused, so a copy of the kit's list cannot go stale in a service. The
 kit's lists are the ones that hold in every service; `schema/**`, `tests/test-config.yaml`, `tests/data/wc/*`
-and `tests/data/static_assets/*` were tooling-agenda's, and the `task ` and `artefact ` tests too. The tests of
+and `tests/data/static_assets/*` were tooling-agenda's, and the `task` and `artefact` tests too. The tests of
 the comparison (`tests/test_behaviour_*.py`) are the kit's. The tests of a service's own harness, such as
 `tests/behaviour/executed.py`, stay in the service.
 
@@ -232,13 +233,14 @@ has its own.
 **Not done.** Keeping the setup in the workflow: it could not be run on a machine, and it was not defined where
 a reader of the repository would look.
 
-**Lint.** `make lint`, part of `make test`, runs `ruff format --check`, `ruff check` and shellcheck on the kit's files with the
-settings of the services' hooks (line length 120, the rules of their `[tool.ruff.lint]`, the four optional shellcheck checks, `-x`), and `ruff` is pinned
-to the version the services lock. The kit's files had been written in tooling-agenda, then renamed, and the
-rename moved line breaks: when tooling-secretary-records took them, its `make check` failed on one SC2154, one
-SC2249, one SC1007 and the format of one file, and `ruff format` of the kit now changes six files. The second pass, on the full run of tooling-secretary-records, found ruff rule TC003 in files that the kit alone has: `ruff check` of the kit found 10, in scripts and in tests. A file that
-fails a service's hook is a drift that the service cannot fix in its copy (1).
-
+**Lint.** `make lint`, part of `make test` and so of the kit's CI, runs the hooks of the services that act on the
+shared files, over every file: `.pre-commit-config.yaml` has the same hooks at the same versions and with the same
+settings (whitespace and end of file, the license header, markdownlint, shellcheck over the scripts a service takes,
+zizmor, `ruff check` and `ruff format`), and `ruff` is pinned to the version the services lock. The kit's files had
+been written in tooling-agenda, then renamed, and when tooling-secretary-records took them its `make check` failed on
+one SC2154, one SC2249, one SC1007, the format of one file and one ruff TC003; a second run found a blank line that
+markdownlint adds to `AGENTS.shared.md`, which the hook of a service rewrites into drift (1) in a copy it cannot
+change. A file that fails a hook of a service is a drift that the service cannot fix in its copy.
 
 ## 9. Seeded from one repository, made general by applying it to others
 
@@ -295,6 +297,7 @@ scripts use showed 36 `DEVKIT_` names, of which the guard lists 19. Every listed
 the 17 that are not listed, one has a rule of its own and the others should not be.
 
 **Decided.**
+
 - The list is the kit's and is closed. It holds two kinds of name: the `DEVKIT_` settings a person changes
   for one run of a wrapper, and the make variables of the shared targets (`KEEP_PORT`, `QUALITY_REF`, `ARGS` and
   the like). A value is a plain value, except where a name has a shape of its own (`ARGS`, `FILTER`, `KEEP_CMD`,

@@ -102,8 +102,8 @@ What still belongs to tooling-agenda, and has to be made general:
 ## Tests
 
 ```sh
-make test          # lint, the shell tests, the Python tests, and the scripts of scripts/ci compile and import
-make lint          # `ruff format --check`, `ruff check` and shellcheck, with the settings of the services' hooks
+make test          # lint (the same hooks as the services), the shell tests, the Python tests, and the scripts of scripts/ci compile and import
+make lint          # the hooks of the services that act on the shared files (`.pre-commit-config.yaml`: whitespace, license header, markdownlint, shellcheck, zizmor, ruff), run by prek
 make test-shell
 make test-python
 ```

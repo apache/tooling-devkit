@@ -330,6 +330,7 @@ variables the scripts read all start with `DEVKIT_`.
   Change dependencies through `uv` and let the `uv-lock` hook keep the lock current.
 - **New Python files need the Apache 2.0 license header** (enforced by the
   `insert-license` hook).
+
 ## Some of these are held for you
 
 The rules above that read as absolutes are enforced rather than remembered, so
