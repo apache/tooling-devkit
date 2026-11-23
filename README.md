@@ -20,6 +20,7 @@ The files sit at the paths a service repository uses for them.
 | `tests/` | the Python tests of the kit's scripts: the fast stage, the selection audit and the quality meters |
 | `.github/actions/` | the apt-install action |
 | `.github/workflows/test.yml` | the kit's own CI: the shell tests, and the Python compiles |
+| `docs/design.md` | why the kit is the way it is: a section for each design decision. The kit's own, not synced |
 | `devkit.conf` | the names the shared files read: `DEVKIT_SERVICE`, `DEVKIT_REPOSITORY` |
 | `devkit.files` | the files a service may take, with where each goes; the rest is the kit's own |
 | `scripts/devkit-sync.sh` | copies those files at a commit, and checks that a copy is still as the kit has it |

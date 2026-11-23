@@ -1,0 +1,254 @@
+# Design of the kit
+
+Why the kit is the way it is: one section for each decision, saying what was decided, why, what it costs,
+and what was not done instead. This file is the kit's own and is not in `devkit.files`; the sync never copies
+it. What is still open is in the tracking issue,
+[apache/tooling-migration#50](https://github.com/apache/tooling-migration/issues/50).
+
+A new decision gets the next number and a section here, in the pull request that makes the change. A decision
+that is replaced stays, with a line that says what replaced it. Say only what was checked.
+
+1. [One source, copies in the services](#1-one-source-copies-in-the-services)
+2. [Names: `DEVKIT_` and `devkit.conf`](#2-names-devkit_-and-devkitconf)
+3. [The sync](#3-the-sync)
+4. [The guard stands down only where it lives at `/run/<service>`](#4-the-guard-stands-down-only-where-it-lives-at-runservice)
+5. [The tests stay in the kit](#5-the-tests-stay-in-the-kit)
+6. [CI workflows stay in the services](#6-ci-workflows-stay-in-the-services)
+7. [What a service adds is data it owns](#7-what-a-service-adds-is-data-it-owns)
+8. [The kit's own Python setup](#8-the-kits-own-python-setup)
+9. [Seeded from one repository, made general by applying it to others](#9-seeded-from-one-repository-made-general-by-applying-it-to-others)
+10. [A file of the kit refers to nothing outside the kit](#10-a-file-of-the-kit-refers-to-nothing-outside-the-kit)
+
+## 1. One source, copies in the services
+
+Accepted by the Tooling PMC on 2026-11-19 (D-18 in apache/tooling-migration). First version:
+apache/tooling-devkit#1.
+
+**Why.** Each Tooling repository carried its own copy of the agent rules, the Bash guard, the commands, the
+scripts and the CI workflows, and the copies drifted in both directions. A fix to the guard reached another
+repository as a pull request that was open for eleven days, had fallen 116 commits behind and conflicted
+with its target. By then there were three versions of the guard, of 1,300 to 1,556 lines.
+
+**Decided.** `apache/tooling-devkit` holds the shared files. A service holds copies at the paths it already
+uses, so that a clone has the guard and the rules with no step. The copies are kept as the kit has them (3).
+A change to a copied file is a pull request in the kit, reviewed by the Tooling PMC.
+
+**Costs.** A repository cannot change a shared file for itself. What differs on purpose has a place of its own:
+a value in `devkit.conf`, an extension point (7), or an override with an issue and a date (3).
+
+**Not done.** Git submodules: a clone without `--recursive` has no guard and no rules. A Claude Code plugin
+or skill alone: each person has to install it, it cannot carry rules that are always loaded, and a guard that
+only some people have is not a guard (a skill for the work agents do is planned in addition). Templates with
+placeholders: a filled-in copy is not the file the kit tested.
+
+## 2. Names: `DEVKIT_` and `devkit.conf`
+
+Accepted. apache/tooling-devkit#1.
+
+**Why.** The scripts read `BAT_MEMORY` in tooling-agenda and `SR_MEMORY` in tooling-secretary-records, and name
+images, volumes and containers after the service. About 430 lines of the shared files held the prefix. A
+prefix taken from a config file would need an indirection (`eval "\${${PREFIX}_MEMORY:-}"`) in every one of
+them, and the guard refuses `eval`.
+
+**Decided.** One neutral prefix, `DEVKIT_`, for every variable the kit's scripts read or set, so the shared
+files are the same bytes everywhere. The `devkit.conf` of a repository holds `DEVKIT_SERVICE` and
+`DEVKIT_REPOSITORY` as `KEY=value` lines, which scripts read with `sed` and never source: the guard reads it
+too, and must not run a file of the repository it guards. The service name gives the image, volume, container
+and network names and the working directory `/run/<service>`; it is lower case letters, digits, `-` and `_`,
+starting with a letter or a digit, because it ends up in names, `sed` patterns and a path. Names that need no
+service are neutral: temporary prefixes, lock and stamp files, labels.
+
+**Costs.** A repository renames the variables the kit reads or sets when it takes the kit, the isx template
+sets `DEVKIT_ISOLATED=1` instead of its own name, and its volumes are named after `DEVKIT_SERVICE`. The
+application's own variables stay.
+
+**Not done.** A prefix from the config (the indirection above). Both names for a while (an alias layer to
+keep, for a rename that happens once).
+
+## 3. The sync
+
+Accepted. apache/tooling-devkit#4.
+
+**Why.** Copying files without a record of where they came from, or a way to tell that a copy was edited, is
+how the drift started.
+
+**Decided.**
+- `devkit.files` in the kit lists what a service may take: a path, or `source destination`. What the kit holds
+  and does not list is the kit's own.
+- `devkit.lock` in a service holds the kit commit it took, and `override <path> <issue> until <YYYY-MM-DD>`
+  lines for a copy that differs on purpose. The sync rewrites only the `commit` line.
+- `scripts/devkit-sync.sh <ref>` copies the listed files at that commit and writes the commit to the lock.
+  `--check` compares each file with the kit at the locked commit, prints each override, and fails on drift, a
+  missing file, an override past its day, and a lock that is not usable. It is one script.
+- `DEVKIT_SKIP` in `devkit.conf` names what a repository keeps as its own. It lists what is left out, not what
+  is taken, so a file the kit adds reaches every repository by default.
+- The first line of a copy says where to change it. It is in the kit's own file, so a copy stays
+  byte-identical. A file that cannot carry a comment (`.claude/settings.json`, the license template) has none,
+  and the check covers it all the same.
+- Files are compared with `git diff --no-index`, which also sees a lost executable bit: `cmp` is not in every
+  container, and `git` is needed anyway. The check reads the real kit at the locked commit, not hashes in the
+  lock, because a hash edited together with its file would hide the drift.
+
+**Costs.** The first copy of `devkit-sync.sh` is made by hand, and `<ref>` is a branch, a tag or a full commit
+id: git does not fetch an abbreviated one. A kit that lists a path the sync must not write (absolute, upward,
+inside `.git`, or the service's own `devkit.conf` or `devkit.lock`) is refused before anything is copied. The
+check is not yet in any repository's CI and nothing opens a sync pull request yet: both need a repository that
+has taken the kit first.
+
+**Not done.** A `files:` list of what a repository takes: a new kit file would reach nobody until each
+repository added it, and `devkit.conf` is `KEY=value`, which holds no list. A separate drift-check script.
+
+## 4. The guard stands down only where it lives at `/run/<service>`
+
+Accepted. Found by an adversarial pass before apache/tooling-devkit#1 was merged, and fixed in it.
+
+**Why.** The guard refuses commands that run the toolchain on the host, and has to stand down inside the dev
+container, where running `uv` and `yarn` is the point. It first did so when `/run/<service>` existed, with the
+service read from `devkit.conf`. But `devkit.conf` is the repository's file to write: a service of `.`, `..`,
+`/` or `user` named a directory that exists on any host, and the guard allowed `uv run pytest`. So did a
+duplicated key whose first line was `.`.
+
+**Decided.** The guard stands down only if the directory two levels above the guard itself resolves to
+`/run/<service>`, which is where the container mounts the working tree and nowhere else, and only for a name
+that is one (2). With no `devkit.conf`, or a name that is not valid, it stays on: the safe answer to "am I
+already inside". `checkout-id.sh` and `behaviour_pulls.py` apply the same rule to the name.
+
+**Costs.** Nothing a repository writes into its own files can switch the guard off. The guard test runs it from
+a copy in a directory of its own with the override removed, for each bad name and for no file. That it does
+stand down at `/run/<service>` is not tried: nothing makes a directory there.
+
+**Not done.** Testing for `/run/<service>` as a path, which is what the first version did.
+
+## 5. The tests stay in the kit
+
+Accepted. apache/tooling-devkit#9 (merged 2026-11-22). The tests that read a service's `Makefile` had left the
+kit in apache/tooling-devkit#10 (see 8).
+
+**Why.** The tests of the kit's scripts were copied to each service with the scripts. Applying the kit to
+tooling-secretary-records in a scratch copy showed the cost. The test files were 5,742 of the 16,191 lines the
+sync handed over. They asserted the names of a service called `devkit`, so they failed in any other
+repository, and some read the service's own `Makefile` or `.gitignore`. A copy of a script is byte-identical to
+what the kit's CI ran the tests against, and the check keeps it so. A copy of the tests could only add the
+differences of a service's environment.
+
+**Decided.** The tests of the kit's scripts are the kit's own: `scripts/*.test.sh`, `scripts/ci/*.test.sh`,
+`.claude/hooks/guard-bash.test.sh` and `tests/`. The kit's CI runs them, and `devkit.files` lists none;
+`scripts/devkit-files.test.sh` fails if one is listed. A test of a service's own files, such as the recipes of
+its `Makefile`, belongs to the service.
+
+**Costs.** A repository deletes its copies of the kit's script tests when it takes the kit, and keeps the tests
+of its own wiring. The kit has no test that reads a service's `Makefile`: two in `test_fast_stage.py` and a
+section of `container-size.test.sh` were removed, and a service keeps its own versions.
+
+**Not done.** Making the tests independent of the service name and skipping the sections that read a
+Makefile. That was done first and dropped: it kept the tests in every repository to fix a problem that only
+exists because they are there.
+
+## 6. CI workflows stay in the services
+
+Accepted. apache/tooling-devkit#5 (merged 2026-11-22). The way to share them is open.
+
+**Why.** The four workflows of tooling-agenda were in the first version of the kit. Dependabot updates the
+pinned actions in the `.github/workflows/` of each repository, so a copy would differ from the kit after every
+update, and the drift check would fail. The workflows also hold what belongs to one service: the `subversion`
+and LDAP packages and the minutes corpus, which a workflow cannot take from `devkit.conf`. The ASF
+self-hosted runner labels are only tooling-agenda's, because it is the private repository; the public ones use
+hosted runners.
+
+**Decided.** The workflows leave the kit and `devkit.files`, and each service keeps its own. The kit has a
+workflow of its own, `.github/workflows/test.yml`, which runs `make test` (8), and `.github/dependabot.yml`
+keeps its pins current.
+
+**Costs.** The services' workflows can drift from each other, and nothing checks that they do not. Only the
+runner labels are one repository's business: the dependabot drift and the service-specific steps are why they
+stay out.
+
+**Not done.** Reusable workflows with inputs, pinned by commit id: the likely way to share them, so that only
+the kit's copy is updated by dependabot and a service calls it. Open in the tracking issue.
+
+## 7. What a service adds is data it owns
+
+Accepted. Implemented for the gate in apache/tooling-devkit#11 (merged 2026-11-23).
+
+**Why.** A shared file that must differ a little per service cannot be edited in the copy (1). `verify.py` was
+a gate engine with the stages, inputs and settings of tooling-agenda written in it as Python constants.
+
+**Decided.** A shared file that needs something from the service reads a file the service owns, as data. For
+the gate it is `scripts/local/verify.toml`, read with `tomllib`: the stages (the files each reads, whether it
+reads the Makefile, which is the longest), the settings that change what a stage checks, and what else a stage
+depends on (a file, the trailers of the branch's commits, or what a command prints). Nothing of the repository
+is imported to run the gate, and a file that cannot be run is refused with every reason at once.
+`PYTEST_WORKERS`, `DEVKIT_PYTHON` and `PYTEST_ADDOPTS` stay in the engine, because the kit's own scripts set them.
+
+**Costs.** On tooling-agenda's tree, with its constants written as a `verify.toml`, five of the six stage keys
+are byte-equal to the old ones; the sixth, `test-python`, changes because the minutes corpus is a command now,
+and that stage runs once more. The same shape is wanted for rules for `pr-preflight.sh`, extra rules for the
+guard (`.claude/guard.local`, which may add a restriction and never remove one) and additions to
+`.claude/settings.json`. None is built.
+
+**Not done.** A Python module the service owns, imported by the engine: the most flexible, but the gate would
+run the repository's own code, and a mistake in it is a traceback. The constants kept in the kit's copy: every
+service would edit a copy, and the engine would drift.
+
+## 8. The kit's own Python setup
+
+Accepted. apache/tooling-devkit#10 (merged 2026-11-22).
+
+**Why.** The setup of the kit's Python tests lived in the test workflow: a `pip install` of two pinned
+packages, and a list of scripts to import that had fallen behind the scripts.
+
+**Decided.** `pyproject.toml` has a `test` group, `pytest` and `pytest-xdist`, locked in `uv.lock`; the tests
+of the selection audit run a real `pytest -n 2`, which is why the second is there. `.tool-versions` names the
+uv and `.python-version` the Python, as in the services. `make test` runs the shell tests and the Python tests,
+and compiles and imports every script of `scripts/ci` by a glob. The workflow runs `make test`, and dependabot
+updates the lock and the action pins. These files are the kit's own and are not in `devkit.files`: a service
+has its own.
+
+**Costs.** The kit has a `Makefile`, so a test that reads a service's `Makefile` cannot hold in it (5).
+
+**Not done.** Keeping the setup in the workflow: it could not be run on a machine, and it was not defined where
+a reader of the repository would look.
+
+## 9. Seeded from one repository, made general by applying it to others
+
+Accepted. Done for the first version in apache/tooling-devkit#1, and again in apache/tooling-devkit#3 and
+apache/tooling-devkit#6.
+
+**Why.** Four repositories held the shared files, and the proposal said to take the best version of each. They
+did not all differ in the same direction, and tooling-agenda was the one that kept moving.
+
+**Decided.** Seed from the repository that has the latest version, tooling-agenda, in steps a review can
+follow: the files as they were, the rename to `DEVKIT_` (2), the names taken from `devkit.conf`, then the
+documents. A change that lands in tooling-agenda later comes in as its own pull request. Find what is not
+general by applying the kit to another repository in a scratch copy and running its tests, before any
+repository is changed. That found, in tooling-secretary-records, the tests that assumed a service called
+`devkit` (5), and three files where its version was the more general one: `quality_meters.py` tolerates a
+tree without the files a meter reads, `apt-install.sh` checks that the metadata answer is a region, and
+`production_import.py` imports a type under `TYPE_CHECKING`. They were taken into the kit. A new test is shown
+failing first: one that has only ever passed has not been shown to test anything.
+
+**Costs.** A change to a copied file in a service is lost at the next sync unless it was made in the kit.
+
+**Not done.** A merge of all four repositories before anything was published: one large review of files whose
+differences were mostly names.
+
+## 10. A file of the kit refers to nothing outside the kit
+
+Accepted. apache/tooling-devkit#5.
+
+**Why.** The files came from tooling-agenda with comments that cited its issues and pull requests, dates, the
+names of people, and the story of how a rule came to be. In the kit that context is gone: a reference such as
+`#729` to another repository is a number nobody can follow, and a comment that says "this used to be a bare
+`except`" describes a version nobody can reach.
+
+**Decided.** A comment says what the code does and why, and warns of what an edit could bring back; it does not
+tell how it got that way. A file does not cite an issue or a pull request of another repository, a date of an
+incident, or a person. A reference to the tracking issue of the kit, or to this file, is fine. A measurement
+that explains a constant stays, with what it was measured on. Examples use neutral names: `tooling-service#12`,
+`@<github-username>`.
+
+**Costs.** 49 references were rewritten. Outside comments, only docstrings in five Python files and two
+sentences that `pr-review.sh` prints changed, which was checked line by line. A file ported from a service is
+cleaned the same way before it comes in.
+
+**Not done.** Keeping the references as a trail back to the services: the history is in the services.
