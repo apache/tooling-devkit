@@ -376,6 +376,14 @@ e2e_isolated() {
         DEVKIT_ISOLATED=1 DEVKIT_NODE_INSTALL=skip "$@" > "$work/out" 2>&1 || status=$?
 }
 
+# A pool of servers needs e2e/supervisor.py; without one it is refused before a runtime is looked for.
+status=0
+DEVKIT_E2E_WORKERS=2 PATH="$work/stubs:$PATH" HOME="$work/home" "$fake/scripts/e2e-container.sh" > "$work/out" 2>&1 || status=$?
+[ "$status" -eq 2 ] || fail "DEVKIT_E2E_WORKERS=2 with no e2e/supervisor.py is refused"
+grep -q 'needs e2e/supervisor.py' "$work/out" || fail "and says why"
+grep -q 'exec uv run python e2e/serve.py' "$fake/scripts/e2e-container.sh" && grep -q '\[ -f e2e/supervisor.py \]' "$fake/scripts/e2e-container.sh" ||
+    fail "the application container starts e2e/serve.py when there is no supervisor"
+
 mkdir -p "$fake/state-e2e"
 : > "$fake/state-e2e/left-over"
 e2e_isolated "$fake/scripts/e2e-container.sh" -g 'two words'
