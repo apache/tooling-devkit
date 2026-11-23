@@ -181,6 +181,13 @@ def test_records_that_are_not_ones_are_not_read(tmp_path: pathlib.Path) -> None:
     assert "None this week." in body
 
 
+def test_a_verdict_that_is_not_text_does_not_stop_the_rollup(tmp_path: pathlib.Path) -> None:
+    week = Week(tmp_path)
+    week.add(1, {**_record(6, _sha("6"), "passes-wrongly", []), "verdict": ["passes-wrongly"]})
+    week.add(2, {**_record(7, _sha("7"), "passes-wrongly", []), "verdict": {"passes-wrongly": 1}})
+    assert "2 of 2 runs kept an audit" in week.body()
+
+
 def test_a_line_of_the_run_list_that_is_not_one_is_left_out() -> None:
     lines = [
         f"1\t{_sha('a')}\t{REPOSITORY}",
