@@ -53,6 +53,27 @@ class TestEverything:
         assert changed.everything() == ["app/a.py", "app/new.py"]
 
 
+class TestExcludes:
+    """The gate's key counts what no .gitignore hides, and a hook has to read the same files."""
+
+    def test_everything_lists_a_file_the_git_directory_hides_and_not_one_a_gitignore_hides(
+        self, repo: pathlib.Path
+    ) -> None:
+        (repo / ".git" / "info" / "exclude").write_text("app/hidden.py\n")
+        (repo / ".gitignore").write_text("ignored.py\n")
+        (repo / "app" / "hidden.py").write_text("2\n")
+        (repo / "ignored.py").write_text("3\n")
+        listed = changed.everything()
+        assert "app/hidden.py" in listed
+        assert "ignored.py" not in listed
+
+    def test_the_selection_lists_a_file_the_git_directory_hides(self, repo: pathlib.Path) -> None:
+        (repo / ".git" / "info" / "exclude").write_text("app/hidden.py\n")
+        (repo / "app" / "hidden.py").write_text("2\n")
+        files, _ = changed.selection("main")
+        assert files == ["app/hidden.py"]
+
+
 class TestSelection:
     def test_the_files_changed_since_the_ref_and_the_untracked_ones(self, repo: pathlib.Path) -> None:
         (repo / "app" / "a.py").write_text("2\n")
