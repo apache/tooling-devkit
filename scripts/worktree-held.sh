@@ -25,8 +25,9 @@ held_ignored() {
             */)
                 # git also lists each directory above an ignored one where nothing is tracked - app/,
                 # app/client/ and app/client/static/ above a build in app/client/static/assets/ - and
-                # those names match no pattern of a build: the files under each are asked instead
-                _inside=$(git -C "$1" ls-files --others --ignored --exclude-standard -- "$_path" 2> /dev/null) || {
+                # those names match no pattern of a build: the files under each are asked instead. The
+                # name is a literal path: `:notes/` read as pathspec magic would list `notes/`, or nothing
+                _inside=$(git -C "$1" --literal-pathspecs ls-files --others --ignored --exclude-standard -- "$_path" 2> /dev/null) || {
                     echo "$_path"
                     continue
                 }

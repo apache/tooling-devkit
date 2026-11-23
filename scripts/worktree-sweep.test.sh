@@ -354,8 +354,27 @@ case $held in
     *app/client/static*) : ;;
     *) fail "a directory holding a build and a file somebody made beside it was not held: $held" ;;
 esac
-held=$(PATH="$work/failgit:$PATH" sh -c '. "$1"; held_ignored "$2"' _ "$here/worktree-held.sh" "$work/builtonly")
-[ -n "$held" ] || fail "a failed listing inside a directory reads as nothing held"
+# the listing inside a directory failing, and only that one: the directory is held
+mkdir -p "$work/failinner"
+printf '#!/bin/sh\ncase "$*" in *ls-files*--directory*) exec %s "$@" ;; *ls-files*) exit 1 ;; esac\nexec %s "$@"\n' \
+    "$real_git" "$real_git" > "$work/failinner/git"
+chmod +x "$work/failinner/git"
+rm "$work/builtonly/app/client/static/todo.txt"
+held=$(PATH="$work/failinner:$PATH" sh -c '. "$1"; held_ignored "$2"' _ "$here/worktree-held.sh" "$work/builtonly")
+case $held in
+    *app/*) : ;;
+    *) fail "a failed listing inside a directory reads as nothing held: $held" ;;
+esac
+# a directory whose name is pathspec magic is asked about by its own name
+mkdir -p "$work/builtonly/:drafts"
+: > "$work/builtonly/:drafts/plan.md"
+printf ':drafts/\n' >> "$work/builtonly/.git/info/exclude"
+rm -r "$work/builtonly/notes"
+held=$(sh -c '. "$1"; held_ignored "$2"' _ "$here/worktree-held.sh" "$work/builtonly")
+case $held in
+    *:drafts/*) : ;;
+    *) fail "a directory named :drafts/ holding a file somebody made was not held: $held" ;;
+esac
 
 if [ "$failures" -gt 0 ]; then
     echo "worktree-sweep: $failures failure(s)" >&2
