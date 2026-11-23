@@ -168,7 +168,7 @@ the kit's copy is updated by dependabot and a service calls it. Open in the trac
 
 ## 7. What a service adds is data it owns
 
-Accepted. Implemented for the gate in apache/tooling-devkit#11 (open when this was written).
+Accepted. Implemented for the gate in apache/tooling-devkit#11 (merged 2026-11-23).
 
 **Why.** A shared file that must differ a little per service cannot be edited in the copy (1). `verify.py` was
 a gate engine with the stages, inputs and settings of tooling-agenda written in it as Python constants.
