@@ -166,6 +166,11 @@ keeps its pins current.
 runner labels are one repository's business: the dependabot drift and the service-specific steps are why they
 stay out.
 
+The drift check (3) runs in a workflow each service keeps, `.github/workflows/devkit.yml`, on every pull
+request and push to `main`: a checkout and `sh scripts/devkit-sync.sh --check`, which needs only `sh` and
+`git`. A copy edited in a service, or an override past its day, fails it there, and not only on a machine
+that ran the check by hand.
+
 **Not done.** Reusable workflows with inputs, pinned by commit id: the likely way to share them, so that only
 the kit's copy is updated by dependabot and a service calls it. Open in the tracking issue.
 
