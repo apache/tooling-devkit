@@ -206,6 +206,16 @@ and `tests/data/static_assets/*` were tooling-agenda's, and the `task` and `arte
 the comparison (`tests/test_behaviour_*.py`) are the kit's. The tests of a service's own harness, such as
 `tests/behaviour/executed.py`, stay in the service.
 
+The fast stage has the same shape: `scripts/local/fast_stage.toml` adds `broad_packages` (the packages under
+`app/` whose tests are too many to select by one module) and `[full_when]` (paths that reach every test, each
+with the reason). `scripts/ci/fast_stage_rules.py` reads it, and only adds: a glob the kit has is refused. The
+kit keeps the globs that hold in every service (the dependency files, `tests/conftest.py`, the fixture data,
+the behaviour harness, `app/__init__.py`); `tests/test-config.yaml`, `schema/**`, `app/webapp.py`, `server.py`
+and the migrations were tooling-agenda's, as was the list of broad packages (`api`, `models`, `actions`, `md`).
+A service without the file has no broad package, so a change to a module selects the tests of its package:
+more tests, not fewer. A file the stage cannot use stops it before it selects anything, since a selection made
+without the rules of the service could leave out the test a change breaks.
+
 **Costs.** On tooling-agenda's tree, with its constants written as a `verify.toml`, five of the six stage keys
 are byte-equal to the old ones; the sixth, `test-python`, changes because the minutes corpus is a command now,
 and that stage runs once more. With tooling-agenda's seven rules written as a `preflight.toml`, the new script

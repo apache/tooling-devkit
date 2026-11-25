@@ -89,6 +89,13 @@ The fourth is `scripts/local/behaviour.toml`, in which a repository adds to what
 one (`[whole]`). The kit has the lists that hold everywhere; the file only adds to them. A file that cannot be
 used is refused with every reason at once. The format is in the docstring of `scripts/ci/behaviour_rules.py`.
 
+The fifth is `scripts/local/fast_stage.toml`, in which a repository adds to what the fast stage
+(`scripts/ci/fast_stage.py`) takes from the kit: the packages under `app/` whose tests are too many for a change
+to one module to select them all (`broad_packages`), and the paths that reach every test, each with the reason
+(`[full_when]`). The kit has the globs that hold everywhere and no broad package; the file only adds. A file
+that cannot be used stops the stage with every reason at once. The format is in the docstring of
+`scripts/ci/fast_stage_rules.py`.
+
 CI workflows are not in the kit. Dependabot updates the pinned actions in the `.github/workflows/` of each
 repository, so a copy of a kit workflow would differ from the kit after every update, and the drift check
 would fail. The four workflows of tooling-agenda also hold what belongs to one service: the `subversion`
