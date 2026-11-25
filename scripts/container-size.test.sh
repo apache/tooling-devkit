@@ -218,9 +218,45 @@ reached() {
     within "[ -s '$work/$1.argv' ]" "${2:-50}"
 }
 
-# Whether run $1 is waiting for a slot, and not running.
+# Whether run $1 is waiting for a slot, and not running. Waiting means it has a flock running, not
+# only that it has said it waits: the run says so before it reads who holds the slots and calls
+# flock, and a slot let go in between goes to whichever run asks first.
 waits() {
-    within "grep -q 'waiting for one of' '$work/$1.out'" 50 && [ ! -s "$work/$1.argv" ]
+    within "grep -q 'waiting for one of' '$work/$1.out' && in_flock $1" 50 && [ ! -s "$work/$1.argv" ]
+}
+
+# Whether a flock runs under run $1, at most four processes down: busybox's `timeout` runs flock as
+# the run's child, GNU's as its grandchild. A flock that is there has asked for the lock, or is a few
+# instructions from asking, where a run that starts after it takes far longer to ask. It does not
+# say which lock (/proc/locks would, but a container's is empty).
+#
+# One read of every /proc/<pid>/stat, not a process per pid: with DEVKIT_GATE_POLL=0.2 each flock
+# lives 0.2s, and on a host with hundreds of processes a scan that forks per pid outlasts it every
+# time. The comm is cut at the last ")", since a comm may hold spaces and parentheses of its own.
+in_flock() {
+    run=$(cat "$work/$1.pid")
+    cat /proc/[0-9]*/stat 2>/dev/null | awk -v run="$run" '
+        {
+            pid = $1
+            comm = $0
+            sub(/^[0-9]+ \(/, "", comm)
+            sub(/\) [^)]*$/, "", comm)
+            rest = $0
+            sub(/^.*\) /, "", rest)
+            split(rest, field, " ")
+            parent[pid] = field[2]
+            if (comm == "flock") flock[pid] = 1
+        }
+        END {
+            for (p in flock) {
+                q = parent[p]
+                for (i = 0; i < 4 && q != ""; i++) {
+                    if (q == run) found = 1
+                    q = parent[q]
+                }
+            }
+            exit !found
+        }'
 }
 
 # How many of the runs named are running.
@@ -471,7 +507,8 @@ grep -q " $holder " "$fake/.git/devkit-gate-slot.0" ||
     fail "and writes which checkout and process holds it, for people to read"
 start waiter
 waits waiter || fail "a second run on a machine of one slot waits"
-grep -q "(pid $holder)" "$work/waiter.out" || fail "and says who holds the slot"
+# the holders are written after the line that says it waits, by a command of their own
+within "grep -q '(pid $holder)' '$work/waiter.out'" 50 || fail "and says who holds the slot"
 sleep 1
 [ "$(grep -c 'waiting for' "$work/waiter.out")" -eq 1 ] ||
     fail "and says so once while nothing changes, not at every try"
@@ -496,6 +533,10 @@ let_go newcomer
 
 # a slot whose file cannot be opened is passed over, not the end of the run
 slots_of 2 "$m6"
+# A run that waited and has ended can leave slot 0 locked for up to its poll: busybox's `timeout`
+# keeps the slot's descriptor open in a watcher that outlives flock (GNU's exits with it). A run
+# started before then takes slot 1, and the mkdir below finds that slot's file already there.
+within "flock -n '$fake/.git/devkit-gate-slot.0' true" 20 || fail "slot 0 is let go once the runs before it end"
 start holder
 reached holder || fail "a run takes slot 0 of two"
 mkdir "$fake/.git/devkit-gate-slot.1"
@@ -580,7 +621,8 @@ start killed
 reached killed || fail "a run to kill starts"
 start after_kill
 waits after_kill || fail "a run waits behind it"
-kill -KILL "$(cat "$work/killed.pid")"
+# already ended where the wait above failed slowly, and the test goes on to report it
+kill -KILL "$(cat "$work/killed.pid")" 2>/dev/null || true
 sleep 1
 [ ! -s "$work/after_kill.argv" ] || fail "the slot stays held while the runtime's client runs on"
 touch "$work/killed.hold"
