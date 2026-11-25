@@ -67,20 +67,20 @@ def _read(path: pathlib.Path) -> dict[str, Any]:
         raise LocalError(f"{LOCAL} cannot be read: {error}") from error
 
 
-def _problems(data: dict[str, Any], kit: Mapping[str, str]) -> list[str]:
-    problems = [f"{LOCAL}: {key!r} is not a key of the file" for key in sorted(set(data) - _KEYS)]
-    packages = data.get("broad_packages", [])
+def _package_problems(packages: Any) -> list[str]:
     if not isinstance(packages, list) or not all(isinstance(name, str) and name.strip() for name in packages):
-        problems.append(f"{LOCAL}: broad_packages is a list of non-empty strings")
-    else:
-        problems += [
-            f"{LOCAL}: broad_packages {name!r} is a directory name under app/, with no `/`"
-            for name in packages
-            if "/" in name
-        ]
-    full_when = data.get("full_when", {})
+        return [f"{LOCAL}: broad_packages is a list of non-empty strings"]
+    return [
+        f"{LOCAL}: broad_packages {name!r} is a directory name under app/, with no `/`"
+        for name in packages
+        if "/" in name
+    ]
+
+
+def _glob_problems(full_when: Any, kit: Mapping[str, str]) -> list[str]:
     if not isinstance(full_when, dict):
-        return [*problems, f"{LOCAL}: full_when is a table of `glob = why`"]
+        return [f"{LOCAL}: full_when is a table of `glob = why`"]
+    problems = []
     for glob, why in full_when.items():
         if not glob.strip():
             problems.append(f"{LOCAL}: a glob in full_when is empty")
@@ -89,6 +89,15 @@ def _problems(data: dict[str, Any], kit: Mapping[str, str]) -> list[str]:
         if glob in kit:
             problems.append(f"{LOCAL}: full_when.{glob!r} is the kit's already")
     return problems
+
+
+def _problems(data: dict[str, Any], kit: Mapping[str, str]) -> list[str]:
+    unknown = [f"{LOCAL}: {key!r} is not a key of the file" for key in sorted(set(data) - _KEYS)]
+    return [
+        *unknown,
+        *_package_problems(data.get("broad_packages", [])),
+        *_glob_problems(data.get("full_when", {}), kit),
+    ]
 
 
 def load_rules(root: pathlib.Path, kit: Mapping[str, str]) -> Rules:
