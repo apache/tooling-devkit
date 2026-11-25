@@ -63,6 +63,7 @@ EXAMPLES = {
     "assets/yarn.lock": "assets/yarn.lock",
     "assets/package.json": "assets/package.json",
     "Makefile": "Makefile",
+    "devkit.mk": "devkit.mk",
     ".github/workflows/**": ".github/workflows/build.yml",
     ".github/actions/**": ".github/actions/apt-install/action.yml",
 }

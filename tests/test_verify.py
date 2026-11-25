@@ -152,6 +152,30 @@ def test_what_a_stage_does_not_read_does_not_run_it_again(repo, change) -> None:
     assert _verdict(ONE) == "unchanged"
 
 
+def _included(root: pathlib.Path) -> None:
+    """The layout of a service: the target in devkit.mk, which the Makefile includes."""
+    shared, own = MAKEFILE.split("\nPYTEST_WORKERS", 1)
+    (root / "devkit.mk").write_text(shared + "\n")
+    (root / "Makefile").write_text("PYTEST_WORKERS" + own + "include devkit.mk\n")
+
+
+def test_a_comment_in_devkit_mk_does_not_run_it_again(repo) -> None:
+    _included(repo)
+    _verdict(ONE)
+    (repo / "devkit.mk").write_text((repo / "devkit.mk").read_text().replace("# what each", "# what every"))
+
+    assert _verdict(ONE) == "unchanged"
+
+
+def test_what_devkit_mk_has_its_target_run_runs_it_again(repo) -> None:
+    _included(repo)
+    _verdict(ONE)
+    (repo / "devkit.mk").write_text((repo / "devkit.mk").read_text().replace("echo one", "echo 1"))
+
+    assert _verdict(ONE) == "passed"
+    assert len(_runs(repo)) == 2
+
+
 def test_a_setting_that_narrows_pytest_runs_it_again(repo, monkeypatch) -> None:
     """`-k` or `--lf` in PYTEST_ADDOPTS runs some of the suite: its pass is not a pass of all of it."""
     _verdict(ONE)
