@@ -37,3 +37,19 @@ A file listed in `devkit.files` is copied to every repository, so it must work i
 tooling-agenda: no service name, and no variable with a prefix other than `DEVKIT_`. It starts with the line
 that names the kit. A new shared file goes in `devkit.files`, and a new file that stays here is declared in
 `scripts/devkit-files.test.sh`; that test says what is missing. Run `make test` before you commit.
+
+## When you change the kit
+
+- A new or changed test fails on the code as it was. Break the code in a throwaway copy, run the test, and
+  say in the pull request that you did.
+- After the change merges, open a sync pull request in each service that takes the file: tooling-agenda,
+  tooling-secretary-records, tooling-directory and tooling-roster. In each, run `scripts/devkit-sync.sh
+  main`, then `make verify`. A sync that changes `scripts/ci/behaviour*.py` is a harness change there and
+  needs a `Behaviour-Harness:` trailer; new kit code the quality ratchet counts may need `Quality-Allow:`.
+- A finding that is a pattern - a wrong claim, a missing test, code a service copied from another - is
+  searched for in all four services and here before it is called fixed. The services share most of their
+  code, so a fix in one is usually owed to the others.
+- Workflows are not kit files (`docs/design.md`, 6). A change one service's CI needs goes to each service's
+  own workflow.
+- A session works on the toolchain directly only where `DEVKIT_ISOLATED=1` is set; the guard reads no other
+  name.
