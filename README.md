@@ -97,10 +97,10 @@ that cannot be used stops the stage with every reason at once. The format is in 
 `scripts/ci/fast_stage_rules.py`.
 
 The make targets that call the kit's scripts are in `devkit.mk`, which a service's `Makefile` includes with
-`include $(dir $(lastword $(MAKEFILE_LIST)))devkit.mk`: the gate, the tests and the fast stage, the quality
+`include $(dir $(firstword $(MAKEFILE_LIST)))devkit.mk`: the gate, the tests and the fast stage, the quality
 ratchet, the behaviour record, the e2e wrappers and the `container-*` wrappers. The service's `Makefile` keeps
 the rest - `init`, `build`, `certs`, `dev`, `run`, `sync` and its own targets - and sets `PYTEST_WORKERS_MAX`
-or `ASSETS_MANIFEST` before the include where it needs to. See `docs/design.md`, 13.
+or `ASSETS_MANIFEST` in its `Makefile`, before the include, where it needs to. See `docs/design.md`, 13.
 
 CI workflows are not in the kit. Dependabot updates the pinned actions in the `.github/workflows/` of each
 repository, so a copy of a kit workflow would differ from the kit after every update, and the drift check

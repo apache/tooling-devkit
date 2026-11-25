@@ -376,14 +376,20 @@ tooling-roster differed in one line, the name of the service in a comment.
 service: `check`, `check-all`, `lint`, `test` and its halves with the record the fast stage reads, `test-fast`,
 `pytest`, `test-coverage`, `verify`, the quality ratchet, the behaviour record, the `e2e-*` wrappers and the
 `container-*` wrappers. A service's `Makefile` includes it, anchored on the Makefile
-(`include $(dir $(lastword $(MAKEFILE_LIST)))devkit.mk`), and keeps `init`, `build`, `certs`, `dev`, `run`,
+(`include $(dir $(firstword $(MAKEFILE_LIST)))devkit.mk`; the first word, since after another include the last
+is that file), and keeps `init`, `build`, `certs`, `dev`, `run`,
 `sync` and its own targets. The recipes are tooling-agenda's, which had the newest of each.
 
-- A service sets `PYTEST_WORKERS_MAX` or `ASSETS_MANIFEST` before the include; the fragment sets each with
-  `?=`.
+- A service sets `PYTEST_WORKERS_MAX` or `ASSETS_MANIFEST` in its `Makefile`, before the include: make reads
+  `ASSETS_MANIFEST` where the fragment names it as a prerequisite, so a value set after is not seen. The
+  fragment gives `PYTEST_WORKERS_MAX` 6 unless the Makefile set it, and does not take it from the environment,
+  where the old Makefiles did not either; the command line still beats both.
 - The fragment keeps the default goal as it found it, so a plain `make` runs the service's first target wherever
   the include goes.
 - A service does not define a target of the fragment again: make warns, and runs the recipe it read last.
+- The kit's scripts that read a change to the `Makefile` read one to `devkit.mk` the same way: it records
+  everything in the behaviour comparison (`EVERYTHING_WHEN`), and the gate keys a stage on its recipe through
+  `make -n` rather than on the file, so a comment in either reruns nothing.
 - `scripts/devkit-mk.test.sh` builds a service of its own and holds each of these.
 
 **Costs.** A service that needs a different recipe for a shared target has no extension point for it; it keeps

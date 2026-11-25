@@ -4,17 +4,22 @@
 # includes this file and keeps only what is its own - init, build, certs, dev, run, sync, and any
 # target of its own:
 #
-#   include $(dir $(lastword $(MAKEFILE_LIST)))devkit.mk
+#   include $(dir $(firstword $(MAKEFILE_LIST)))devkit.mk
 #
 # Anchored on the Makefile rather than on the directory make runs in, so that `make -f` from elsewhere
-# finds this file, and the checkout it names below is the one the Makefile is in. Where the include goes does not change the default goal: a plain `make` runs the first target of
-# the service's own Makefile, as it did before. A service sets these, if at all, before the include:
+# finds this file, and the checkout it names below is the one the Makefile is in. The first word of
+# MAKEFILE_LIST rather than the last: the last is whatever was read most recently, which after another
+# include is that file.
 #
-#   PYTEST_WORKERS_MAX   the cap on pytest workers (6)
+# Where the include goes does not change the default goal: a plain `make` runs the first target of the
+# service's own Makefile, as it did before. A service sets these, if at all, in its Makefile before the
+# include, since make reads each where this file uses it:
+#
+#   PYTEST_WORKERS_MAX   the cap on pytest workers (6); the environment does not set it
 #   ASSETS_MANIFEST      the built frontend, which `e2e-test-host` builds first where it is missing
 #
 # A target defined here is not defined again in the service's Makefile: make would warn, and run the
-# last recipe it read.
+# recipe it read last.
 
 devkit_mk_goal := $(.DEFAULT_GOAL)
 
@@ -56,7 +61,11 @@ lint:
 # themselves, up to the same cap, from the memory the machine has free:
 # DEVKIT_SIZE_WORKERS, read by scripts/container-size.sh. `DEVKIT_SIZE_WORKERS=0` puts the
 # fixed settings back.
-PYTEST_WORKERS_MAX ?= 6
+# The service's value where its Makefile set one, and 6 otherwise - not one from the environment, which
+# would reach the $(shell) below unquoted. A value on the command line still beats both.
+ifneq ($(origin PYTEST_WORKERS_MAX),file)
+PYTEST_WORKERS_MAX := 6
+endif
 PYTEST_WORKERS ?= $(shell n=$$(nproc 2>/dev/null || echo 1); if [ "$$n" -gt $(PYTEST_WORKERS_MAX) ]; then echo $(PYTEST_WORKERS_MAX); else echo "$$n"; fi)
 DEVKIT_SIZE_WORKERS ?= $(PYTEST_WORKERS_MAX)
 # Recursive rather than immediate, so that the target-specific override on `pytest` below
