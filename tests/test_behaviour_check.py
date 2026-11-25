@@ -229,6 +229,8 @@ class TestHarnessChanges:
             "scripts/ci/behaviour_gate.py",
             "scripts/ci/behaviour_rules.py",
             "scripts/ci/trailers.py",
+            "scripts/ci/behaviour_rules.py",
+            "scripts/local/behaviour.toml",
         ],
     )
     def test_each_part_of_the_harness_counts(self, path: str) -> None:
