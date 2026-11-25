@@ -40,8 +40,8 @@ _CI = pathlib.Path(__file__).resolve().parent.parent / "scripts" / "ci"
 
 
 def _load(name: str) -> types.ModuleType:
-    """Load a half by path, since neither is on the import path; the record half first, because the stage
-    imports it by name."""
+    """Load a half by path, since none is on the import path; the halves first, because the stage imports
+    them by name."""
     spec = importlib.util.spec_from_file_location(name, _CI / f"{name}.py")
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
@@ -51,6 +51,7 @@ def _load(name: str) -> types.ModuleType:
 
 
 kept = _load("fast_stage_record")
+local_rules = _load("fast_stage_rules")
 fast_stage = _load("fast_stage")
 
 TESTS = {
@@ -107,10 +108,35 @@ def _write(root: pathlib.Path, files: dict[str, str]) -> None:
         (root / path).write_text(text)
 
 
+LOCAL_FULL_WHEN = {
+    "tests/test-config.yaml": "the configuration every test runs with",
+    "schema/**": "data read by path, which no module name says",
+    "app/webapp.py": "startup: the application every route test runs",
+    "server.py": "startup",
+    "app/*/migrations/**": "a migration, which every database is built through",
+}
+BROAD_PACKAGES = ("api", "models", "actions", "md")
+LOCAL = (
+    "broad_packages = ["
+    + ", ".join(f'"{name}"' for name in BROAD_PACKAGES)
+    + "]\n\n[full_when]\n"
+    + "".join(f'"{glob}" = "{why}"\n' for glob, why in LOCAL_FULL_WHEN.items())
+)
+"""What a service with this suite writes in `scripts/local/fast_stage.toml`: the packages whose tests are too
+many to select, and the paths of its own that reach every test."""
+
+
 @pytest.fixture
-def tree(tmp_path: pathlib.Path) -> pathlib.Path:
+def bare(tmp_path: pathlib.Path) -> pathlib.Path:
+    """The suite of a repository that has no `scripts/local/fast_stage.toml`."""
     _write(tmp_path, TESTS | {"app/models/agenda/__init__.py": PACKAGE})
     return tmp_path
+
+
+@pytest.fixture
+def tree(bare: pathlib.Path) -> pathlib.Path:
+    _write(bare, {local_rules.LOCAL: LOCAL})
+    return bare
 
 
 def selected(root: pathlib.Path, *changed: str, failed: frozenset[str] = frozenset()) -> dict[str, list[str]]:
@@ -317,7 +343,40 @@ EVERY_TEST = {
 
 
 def test_every_trigger_is_asked_for() -> None:
-    assert set(EVERY_TEST) == set(fast_stage.FULL_WHEN)
+    assert set(EVERY_TEST) == set(fast_stage.FULL_WHEN) | set(LOCAL_FULL_WHEN)
+
+
+def test_a_repository_without_the_file_has_the_kits_globs_and_no_broad_package(bare: pathlib.Path) -> None:
+    for path in ("app/webapp.py", "server.py", "schema/x.json", "app/roster/migrations/versions/0007_x.py"):
+        assert not fast_stage.make_plan(bare, {path}, DURATIONS, set(), limit=1.0).reasons
+    plan = fast_stage.make_plan(bare, {"app/api/routes/meetings.py"}, DURATIONS, set(), limit=1.0)
+    assert "tests/api/test_ping.py" in plan.rules  # a package whose tests the file would have called broad
+    assert [reason.split(":")[0] for reason in fast_stage.full_run_reasons(bare, {"pyproject.toml"})] == [
+        "pyproject.toml"
+    ]
+
+
+def test_a_broad_package_of_the_file_selects_only_the_tests_named_for_the_module(bare: pathlib.Path) -> None:
+    path = "app/api/routes/meetings.py"
+    narrow = by_path(bare, path)
+    _write(bare, {local_rules.LOCAL: 'broad_packages = ["api"]\n'})
+    broad = by_path(bare, path)
+    assert broad < narrow
+    assert "tests/api/test_meetings.py" in broad
+    assert "tests/api/test_ping.py" in narrow - broad
+
+
+def test_a_glob_of_the_file_reaches_every_test(bare: pathlib.Path) -> None:
+    assert not fast_stage.full_run_reasons(bare, {"server.py"})
+    _write(bare, {local_rules.LOCAL: '[full_when]\n"server.py" = "why not"\n'})
+    assert fast_stage.full_run_reasons(bare, {"server.py"}) == ["server.py: why not"]
+
+
+def test_a_file_the_stage_cannot_use_stops_it_with_every_reason(bare: pathlib.Path) -> None:
+    _write(bare, {local_rules.LOCAL: "nonsense = 1\nbroad_packages = [1]\n"})
+    with pytest.raises(SystemExit) as stopped:
+        fast_stage.run(bare, "HEAD", [])
+    assert len(str(stopped.value).splitlines()) == 2
 
 
 @pytest.mark.parametrize("path", sorted(EVERY_TEST.values()))
