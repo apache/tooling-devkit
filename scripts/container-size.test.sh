@@ -611,6 +611,15 @@ let_go holder
 reached after_stopped || fail "and the next run takes the slot when it is let go"
 let_go after_stopped
 
+# The slots are the service's own: tooling-agenda, whose service is bat, kept bat-gate-slot.<n>, and a worktree on
+# either side of its changeover has to find the other's slots.
+sed -i 's/^DEVKIT_SERVICE=.*/DEVKIT_SERVICE=bat/' "$fake/devkit.conf"
+rm -f "$fake/.git"/*-gate-slot.* "$fake/.git"/*-gate-probe
+slots_of 1 "$m6"
+once scoped
+[ -e "$fake/.git/bat-gate-slot.0" ] || fail "the gate slot is named after the service"
+[ ! -e "$fake/.git/devkit-gate-slot.0" ] || fail "and not after the kit"
+
 # The targets of a service's Makefile that call container.sh are the service's to test.
 
 if [ "$failures" -ne 0 ]; then
