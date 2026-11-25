@@ -9,6 +9,7 @@
 .claude/settings.json
 .github/actions/apt-install/action.yml
 AGENTS.shared.md
+devkit.mk
 scripts/Caddyfile
 scripts/checkout-id.sh
 scripts/checkout-resources.sh

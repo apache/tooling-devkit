@@ -50,7 +50,7 @@ allowed=$(printf '%s\n' "$listed" | grep '^DEVKIT_' | sort -u)
 make_variables=$(printf '%s\n' "$listed" | grep -v '^DEVKIT_' | sort -u)
 
 # What the scripts of the kit use: not its tests, and not the guard, which names them to refuse.
-used=$(git ls-files scripts .github .claude/commands Makefile |
+used=$(git ls-files scripts .github .claude/commands Makefile devkit.mk |
     grep -v -E '\.test\.sh$' |
     while IFS= read -r file; do grep -hoE 'DEVKIT_[A-Z0-9_]+' "$file" || true; done | sort -u)
 

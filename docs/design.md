@@ -20,6 +20,7 @@ that is replaced stays, with a line that says what replaced it. Say only what wa
 10. [A file of the kit refers to nothing outside the kit](#10-a-file-of-the-kit-refers-to-nothing-outside-the-kit)
 11. [What a make wrapper may be given](#11-what-a-make-wrapper-may-be-given)
 12. [A service adds permissions in a file, merged at sync](#12-a-service-adds-permissions-in-a-file-merged-at-sync)
+13. [The shared make targets are a fragment the service includes](#13-the-shared-make-targets-are-a-fragment-the-service-includes)
 
 ## 1. One source, copies in the services
 
@@ -362,3 +363,35 @@ targets) were in the kit only because the file had no other place for them. They
 
 **Not done.** A second settings file for the service (`settings.local.json` is personal and ignored). Merging
 `hooks` or `env`. An additions file in the kit's own format with a header: JSON has no comment.
+
+## 13. The shared make targets are a fragment the service includes
+
+**Why.** A script of the kit does nothing in a service that lacks the target that runs it. Each service kept
+its own copy of the same targets, and the copies drifted: tooling-agenda's `test-python` recorded its run for
+the fast stage and had `test-fast`, and its `quality-base` and `snapshot-base` shared a reading across
+worktrees (`bases.py`); the three other services had none of that. The Makefiles of tooling-directory and
+tooling-roster differed in one line, the name of the service in a comment.
+
+**Decided.** `devkit.mk`, a kit file, holds every target that calls a kit script or is the same in every
+service: `check`, `check-all`, `lint`, `test` and its halves with the record the fast stage reads, `test-fast`,
+`pytest`, `test-coverage`, `verify`, the quality ratchet, the behaviour record, the `e2e-*` wrappers and the
+`container-*` wrappers. A service's `Makefile` includes it, anchored on the Makefile
+(`include $(dir $(lastword $(MAKEFILE_LIST)))devkit.mk`), and keeps `init`, `build`, `certs`, `dev`, `run`,
+`sync` and its own targets. The recipes are tooling-agenda's, which had the newest of each.
+
+- A service sets `PYTEST_WORKERS_MAX` or `ASSETS_MANIFEST` before the include; the fragment sets each with
+  `?=`.
+- The fragment keeps the default goal as it found it, so a plain `make` runs the service's first target wherever
+  the include goes.
+- A service does not define a target of the fragment again: make warns, and runs the recipe it read last.
+- `scripts/devkit-mk.test.sh` builds a service of its own and holds each of these.
+
+**Costs.** A service that needs a different recipe for a shared target has no extension point for it; it keeps
+the file as its own with `DEVKIT_SKIP`, which gives up every later change of the kit to it. The three services
+that took the fragment changed what `test-python`, `test-frontend`, `quality-base`, `snapshot-base`,
+`container-test-coverage` and `container-test-py314` run, to tooling-agenda's recipes.
+
+**Not done.** The whole `Makefile` as a kit file, with a service's targets in a `Makefile.local` it includes:
+tooling-agenda's own targets and its `dev` on compose would have needed hooks in the kit, and a target defined
+twice is a warning, not an error. Make variables in place of the recipes for each difference: there was no
+difference left that the services needed.

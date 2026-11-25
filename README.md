@@ -96,6 +96,12 @@ to one module to select them all (`broad_packages`), and the paths that reach ev
 that cannot be used stops the stage with every reason at once. The format is in the docstring of
 `scripts/ci/fast_stage_rules.py`.
 
+The make targets that call the kit's scripts are in `devkit.mk`, which a service's `Makefile` includes with
+`include $(dir $(lastword $(MAKEFILE_LIST)))devkit.mk`: the gate, the tests and the fast stage, the quality
+ratchet, the behaviour record, the e2e wrappers and the `container-*` wrappers. The service's `Makefile` keeps
+the rest - `init`, `build`, `certs`, `dev`, `run`, `sync` and its own targets - and sets `PYTEST_WORKERS_MAX`
+or `ASSETS_MANIFEST` before the include where it needs to. See `docs/design.md`, 13.
+
 CI workflows are not in the kit. Dependabot updates the pinned actions in the `.github/workflows/` of each
 repository, so a copy of a kit workflow would differ from the kit after every update, and the drift check
 would fail. The four workflows of tooling-agenda also hold what belongs to one service: the `subversion`
@@ -124,8 +130,8 @@ The shell tests need `sh`, `git`, `flock` and the usual Unix tools. The Python s
 runs `make test`. The `Makefile`, `pyproject.toml`, `uv.lock` and `.tool-versions` belong to the kit and are
 not in `devkit.files`.
 
-The tests of the kit's scripts stay in the kit. The tests of a service's own files, such as the recipes of its
-`Makefile`, are the service's to keep.
+The tests of the kit's scripts stay in the kit. The tests of a service's own files, such as the recipes of the
+targets its own `Makefile` adds, are the service's to keep.
 
 ## License
 
