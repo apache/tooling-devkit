@@ -421,6 +421,11 @@ them one after the other, and takes longer by the shorter of them. A heavy stage
 before it waits, and a file edited while it waits is a change after the run, so nothing is recorded; it runs
 again next time.
 
+A `make pytest` that asks for more than two xdist workers - `-n`, `--numprocesses` in its ARGS, or
+PYTEST_WORKERS on its make line - is sized as given and takes a slot as well: `container-pytest` is meant for one
+question, and takes none, but `ARGS='tests -n 12'` made it a run of the suite past both, as a review agent once
+did beside a gate. Two workers or fewer stays outside the slots, serial or not.
+
 **Not done.** A cap on how many stages run at once: the light stages cost little, and it is the suites that
 make the peak. Sizing the isolated slot by `MemAvailable`: the slots are sized by `MemTotal` on a host for the
 reasons in `container-size.sh`, and the same reasons hold on a box.
