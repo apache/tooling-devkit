@@ -98,6 +98,13 @@ variables the scripts read all start with `DEVKIT_`.
   an svn repository of its own first, so for a handful of tests that setup costs more
   than the parallelism saves, and interleaved output is not worth reading anyway.
 
+  A service may have its gate run the selection of the fast stage instead of the whole
+  suite: its `scripts/local/verify.toml` names the stage `test-python-selected` in place of
+  `test-python`. The gate then runs every test the change most likely reaches, reports
+  every failure among them, and runs the whole suite where the change needs it. CI runs
+  the whole suite on every push, and is what catches what the selection does not hold. The
+  selection audit says how often that happens.
+
   `make e2e-test` reaches the app by container ip over plain http, which is
   deliberately not a secure context - browser APIs gated on one are absent
   there, so a feature depending on one fails in the suite instead of in front of

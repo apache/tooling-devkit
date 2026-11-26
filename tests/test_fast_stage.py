@@ -868,4 +868,63 @@ def test_vitest_runs_after_pytest_passes_and_its_failure_is_the_stages(
     assert (repo / "vitest-ran").read_text() == "x\n"
 
 
+# --- the gate's selection (`run --gate`, `make test-python-selected`) --------------------------------
+
+
+def test_the_gate_runs_the_whole_selection_and_reports_every_failure(
+    bulk: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The fast stage stops at the first failure, to answer quickly; the gate reports them all."""
+    repo = bulk
+    counted = "def test_a():\n    with open('ran', 'a') as f:\n        f.write('{}')\n    assert False\n"
+    _commit(repo, {"tests/test_one.py": counted.format(1), "tests/test_two.py": counted.format(2)})
+    status = fast_stage.run(repo, "HEAD~1", [], gate=True)
+    said = capsys.readouterr().out
+    assert status == 1
+    assert sorted((repo / "ran").read_text()) == ["1", "2"]
+    assert not (repo / "bulk-ran").exists(), "a selection, not the suite"
+    assert "The selection FAILED" in said
+    assert said.rstrip().endswith(fast_stage.THE_GATE_SAYS)
+
+
+def test_the_gate_passes_a_selection_that_passes(bulk: pathlib.Path, capsys: pytest.CaptureFixture[str]) -> None:
+    repo = bulk
+    _commit(repo, {"tests/test_one.py": "def test_a():\n    pass\n"})
+    assert fast_stage.run(repo, "HEAD~1", [], gate=True) == 0
+    said = capsys.readouterr().out
+    assert "The selection passed" in said
+    assert fast_stage.NOT_THE_GATE not in said
+
+
+def test_a_change_that_needs_the_whole_suite_runs_no_selection_in_the_gate(bulk: pathlib.Path) -> None:
+    """The make target runs the whole suite for it: a selection first would only be run twice."""
+    repo = bulk
+    _commit(repo, {"pyproject.toml": "", "tests/test_one.py": "def test_a():\n    open('ran', 'a').close()\n"})
+    assert fast_stage.run(repo, "HEAD~1", [], gate=True) == fast_stage.NEEDS_THE_SUITE
+    assert not (repo / "ran").exists()
+    assert not (repo / "bulk-ran").exists()
+
+
+def test_a_change_the_gate_selects_nothing_for_passes(bulk: pathlib.Path) -> None:
+    """Not the fast stage's refusal: a change no test reads leaves the gate nothing to run, and CI the rest."""
+    repo = bulk
+    _commit(repo, {"docs/x.md": "words"})
+    assert fast_stage.run(repo, "HEAD~1", [], gate=True) == 0
+    assert not (repo / "bulk-ran").exists()
+
+
+def test_the_gate_runs_no_vitest(bulk: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """test-frontend is a stage of the gate of its own."""
+    repo = bulk
+
+    def vitest(root: pathlib.Path, changed: set[str]) -> list[str]:
+        return ["sh", "-c", "echo x >> ../vitest-ran"]
+
+    monkeypatch.setattr(fast_stage, "vitest_command", vitest)
+    (repo / "assets").mkdir()
+    _commit(repo, {"tests/test_one.py": "def test_a():\n    pass\n", "assets/src/x.ts": ""})
+    assert fast_stage.run(repo, "HEAD~1", [], gate=True) == 0
+    assert not (repo / "vitest-ran").exists()
+
+
 # The recipes of a service's Makefile that call the fast stage are the service's to test.
