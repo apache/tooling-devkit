@@ -401,3 +401,26 @@ that took the fragment changed what `test-python`, `test-frontend`, `quality-bas
 tooling-agenda's own targets and its `dev` on compose would have needed hooks in the kit, and a target defined
 twice is a warning, not an error. Make variables in place of the recipes for each difference: there was no
 difference left that the services needed.
+
+## 14. A gate holds a slot without a container too, and runs one suite at a time
+
+**Why.** On a host, a run of the whole suite takes a gate slot and is sized to the machine, so a second
+session's gate waits rather than starting beside the first. Where `DEVKIT_ISOLATED=1`, `container.sh` ran the
+command before it reached the sizing, so neither applied. Several sessions share one box as they share a host,
+and their gates all started at once: on a 16-core box one gate alone took the load to 32. Inside one gate,
+`verify.py` started every stage together, and two of a service's stages can each run its test suite.
+
+**Decided.** `container.sh` sizes a run and takes its slot (`size_this_run`) before the isolated path runs the
+command, which then holds the slot on descriptor 8 as `podman run` does, and is given the workers it was sized
+for. It has no memory cap: there is no container to put one on. A stage of `verify.toml` may say it is
+`heavy`; a heavy stage starts once the heavy stage before it has ended, the `longest` first. The other stages
+still run beside them.
+
+**Costs.** A box's gates now wait for one another, as a host's do. A gate whose heavy stages ran together runs
+them one after the other, and takes longer by the shorter of them. A heavy stage computes whether it changed
+before it waits, and a file edited while it waits is a change after the run, so nothing is recorded; it runs
+again next time.
+
+**Not done.** A cap on how many stages run at once: the light stages cost little, and it is the suites that
+make the peak. Sizing the isolated slot by `MemAvailable`: the slots are sized by `MemTotal` on a host for the
+reasons in `container-size.sh`, and the same reasons hold on a box.

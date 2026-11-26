@@ -103,7 +103,7 @@ trap cleanup EXIT
 
 fake="$work/repo"
 mkdir -p "$fake/scripts" "$work/bin"
-for f in container.sh container-size.sh checkout-id.sh checkout-resources.sh seed-volumes.sh; do
+for f in container.sh container-size.sh checkout-id.sh checkout-resources.sh seed-volumes.sh ensure-node-modules.sh; do
     cp "$here/$f" "$fake/scripts/$f"
 done
 cp "$here/../devkit.conf" "$fake/devkit.conf"
@@ -131,6 +131,19 @@ case "$1" in
 esac
 STUB
 chmod +x "$work/bin/podman"
+
+# The command of a run with no container (DEVKIT_ISOLATED=1): it records the workers it was given in
+# $ARGV_FILE, as `run` above records its flags, and holds as `run` does.
+cat > "$work/bin/held" <<'STUB'
+#!/bin/sh
+printf 'PYTEST_WORKERS=%s\n' "${PYTEST_WORKERS:-}" > "$ARGV_FILE"
+n=0
+while [ -n "${HOLD:-}" ] && [ ! -e "$HOLD" ] && [ ! -e "$WORK/stop" ] && [ "$n" -lt 300 ]; do
+    sleep 0.1
+    n=$((n + 1))
+done
+STUB
+chmod +x "$work/bin/held"
 
 # shellcheck source=scripts/container-size.sh
 . "$here/container-size.sh"
@@ -611,6 +624,35 @@ waits linked_waiter || fail "a run in a linked worktree waits for the same slot"
 let_go holder
 reached linked_waiter || fail "and takes it when it is let go"
 let_go linked_waiter
+
+# --- where the whole environment is disposable ----------------------------------------------
+
+# With no container, a run of the whole suite still takes a slot: sessions share a box as they share
+# a host. It is sized, and has no cap, since there is nothing to cap.
+slots_of 1 "$m6"
+cmd="$work/bin/held"
+start isolated_holder DEVKIT_ISOLATED=1
+reached isolated_holder || fail "a run with no container starts"
+grep -q " $(cat "$work/isolated_holder.pid") " "$fake/.git/devkit-gate-slot.0" ||
+    fail "and takes the slot, as a run in a container does"
+[ "$(workers_of isolated_holder)" = 6 ] || fail "and its command is given the workers it was sized for"
+grep -q "6 pytest workers in no cap" "$work/isolated_holder.out" || fail "and it says it has no cap"
+start isolated_waiter DEVKIT_ISOLATED=1
+waits isolated_waiter || fail "a second run with no container waits for the slot"
+cmd=''
+start contained_waiter
+waits contained_waiter || fail "and so does a run in a container"
+let_go isolated_holder
+within "[ \$(running isolated_waiter contained_waiter) -eq 1 ]" 50 || fail "one of them starts once the slot is let go"
+# whichever started, the other takes the slot after it, and is let go before it asks
+touch "$work/isolated_waiter.hold" "$work/contained_waiter.hold"
+let_go isolated_waiter
+let_go contained_waiter
+cmd="$work/bin/held"
+once isolated_unsized DEVKIT_ISOLATED=1 -u DEVKIT_SIZE_WORKERS
+cmd=''
+[ "$(workers_of isolated_unsized)" = "" ] || fail "a command that is no run of the whole suite is not sized"
+grep -q 'pytest workers' "$work/isolated_unsized.out" && fail "and takes no slot"
 
 # --- a holder that dies -----------------------------------------------------------------------
 

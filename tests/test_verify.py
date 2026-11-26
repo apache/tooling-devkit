@@ -59,6 +59,13 @@ first:
 
 second:
 \ttouch "$$RUNS.second"; for i in $$(seq 100); do [ -f "$$RUNS.first" ] && exit 0; sleep 0.1; done; exit 1
+
+# each says when it starts and when it ends, with time between for another to start in
+slow-a:
+\techo a-start >> "$$RUNS"; sleep 0.5; echo a-end >> "$$RUNS"
+
+slow-b:
+\techo b-start >> "$$RUNS"; sleep 0.5; echo b-end >> "$$RUNS"
 """
 
 
@@ -303,6 +310,57 @@ def test_the_stages_run_at_the_same_time(repo) -> None:
     assert verify.main(["--config", str(config)]) == 0
 
 
+def test_a_heavy_stage_runs_beside_one_that_is_not(repo) -> None:
+    config = _config(
+        repo,
+        """
+        [[stages]]
+        name = "first"
+        heavy = true
+        [[stages]]
+        name = "second"
+    """,
+    )
+
+    assert verify.main(["--config", str(config)]) == 0
+
+
+def test_two_heavy_stages_run_one_after_the_other(repo) -> None:
+    config = _config(
+        repo,
+        """
+        [[stages]]
+        name = "slow-a"
+        heavy = true
+        [[stages]]
+        name = "slow-b"
+        heavy = true
+    """,
+    )
+
+    assert verify.main(["--config", str(config)]) == 0
+    runs = _runs(repo)
+    assert [run.split("-")[0] for run in runs] in (["a", "a", "b", "b"], ["b", "b", "a", "a"]), runs
+
+
+def test_the_longest_heavy_stage_starts_first_wherever_the_file_lists_it(repo) -> None:
+    config = _config(
+        repo,
+        """
+        [[stages]]
+        name = "slow-a"
+        heavy = true
+        [[stages]]
+        name = "slow-b"
+        heavy = true
+        longest = true
+    """,
+    )
+
+    assert verify.main(["--config", str(config)]) == 0
+    assert _runs(repo) == ["b-start", "b-end", "a-start", "a-end"]
+
+
 def test_the_gate_fails_when_one_stage_does_and_runs_the_others_all_the_same(repo, capsys) -> None:
     config = _config(
         repo,
@@ -424,6 +482,7 @@ VALID = """
     name = "test-python"
     extras = ["corpus"]
     longest = true
+    heavy = true
 
     [[stages]]
     name = "lint"
@@ -441,7 +500,14 @@ def test_a_file_that_says_what_the_stages_are_is_read(repo) -> None:
     assert config.extras["trailers"] == verify.Extra("trailers")
     assert config.extras["corpus"] == verify.Extra("command", run="ls state")
     first, second = config.stages
-    assert (first.name, first.paths, first.extras, first.longest) == ("test-python", None, ("corpus",), True)
+    assert (first.name, first.paths, first.extras, first.longest, first.heavy) == (
+        "test-python",
+        None,
+        ("corpus",),
+        True,
+        True,
+    )
+    assert not second.heavy
     assert (second.paths, second.reads_makefile, second.extras) == (
         ("assets/", "tests/data/"),
         True,
@@ -466,6 +532,7 @@ def test_a_file_that_says_what_the_stages_are_is_read(repo) -> None:
         pytest.param(
             '[[stages]]\nname = "a"\nlongest = "yes"\n', "longest is true or false", id="a flag that is not one"
         ),
+        pytest.param('[[stages]]\nname = "a"\nheavy = 1\n', "heavy is true or false", id="heavy that is not a flag"),
         pytest.param(
             'environment = ["A B"]\n[[stages]]\nname = "a"\n', "A B is not a variable name", id="a bad variable"
         ),
