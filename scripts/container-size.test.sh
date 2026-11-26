@@ -165,7 +165,8 @@ slots_of() {
 
 # Start container.sh as run $1, with the settings that follow, in the background, from the copy in
 # $copy (the repository above by default), under $shell (the script's own by default), running $cmd
-# (`true` by default). It holds once it reaches the runtime, until `let_go $1`. Whatever the
+# (`true` by default), and $cmd_arg after it as one word where it is set - as a make target passes
+# `ARGS="$(ARGS)"`. It holds once it reaches the runtime, until `let_go $1`. Whatever the
 # environment this test runs in sets - a container's own DEVKIT_TIMEOUT, CI on a runner - is cleared
 # first.
 start() {
@@ -179,7 +180,7 @@ start() {
             PATH="$work/bin:$PATH" DEVKIT_RUNTIME=podman DEVKIT_ISOLATED='' DEVKIT_NODE_INSTALL=skip \
             DEVKIT_MEMINFO="$work/meminfo" DEVKIT_NPROC=16 DEVKIT_GATE_POLL=0.2 DEVKIT_SIZE_WORKERS=6
         # shellcheck disable=SC2086  # an empty $shell is no word at all, and $cmd is several
-        exec env "$@" ${shell:-} "${copy:-$fake}/scripts/container.sh" ${cmd:-true}
+        exec env "$@" ${shell:-} "${copy:-$fake}/scripts/container.sh" ${cmd:-true} ${cmd_arg:+"$cmd_arg"}
     ) > "$work/$name.out" 2>&1 &
     echo $! > "$work/$name.pid"
 }
@@ -366,6 +367,29 @@ once direct_given -u DEVKIT_SIZE_WORKERS
 cmd=''
 [ "$(workers_of direct_given)" = 2 ] || fail "a PYTEST_WORKERS on the make line is the count"
 [ "$(memory_of direct_given)" = "${m2}m" ] || fail "and the cap is what that count needs"
+# `container-pytest` passes its ARGS as one word: a narrow question stays outside the slots, and one that
+# asks for the workers of a suite run is sized, as given, and takes a slot
+cmd='make pytest'
+cmd_arg='ARGS=tests/test_x.py -q'
+once narrow -u DEVKIT_SIZE_WORKERS
+[ "$(memory_of narrow)" = 6g ] || fail "a narrow make pytest is not sized"
+grep -q 'slot' "$work/narrow.out" && fail "and takes no slot"
+cmd_arg='ARGS=tests -q -n 2'
+once two_workers -u DEVKIT_SIZE_WORKERS
+[ "$(memory_of two_workers)" = 6g ] || fail "a make pytest of two workers is still narrow"
+cmd_arg='ARGS=tests -q -n 4 -p no:randomly'
+once four_workers -u DEVKIT_SIZE_WORKERS
+[ "$(workers_of four_workers)" = 4 ] || fail "a make pytest of four workers is sized for the four it asked for"
+[ "$(memory_of four_workers)" = "${m4}m" ] || fail "and its cap is what four need"
+grep -q 'slot 0 of 1' "$work/four_workers.out" || fail "and it takes a slot"
+cmd_arg='ARGS=tests --numprocesses=4'
+once four_spelt_long -u DEVKIT_SIZE_WORKERS
+[ "$(workers_of four_spelt_long)" = 4 ] || fail "--numprocesses is the same question as -n"
+cmd_arg='ARGS=tests/*.py -n auto'
+once auto_workers -u DEVKIT_SIZE_WORKERS
+[ "$(workers_of auto_workers)" = 6 ] || fail "-n auto is a slot's worth of workers, and a glob in ARGS is not expanded"
+cmd=''
+cmd_arg=''
 cmd='make check'
 once direct_check -u DEVKIT_SIZE_WORKERS
 cmd=''

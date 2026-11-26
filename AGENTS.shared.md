@@ -35,7 +35,7 @@ variables the scripts read all start with `DEVKIT_`.
   | `make container-check` | the pre-commit hooks, over what changed since `origin/main` |
   | `make container-check-all` | every hook over every file, as `verify` and CI run them |
   | `make container-test` | pytest + vitest |
-  | `make container-pytest ARGS='...'` | one question: `ARGS='tests/api/test_x.py -k rename -q'`, serial |
+  | `make container-pytest ARGS='...'` | one question: `ARGS='tests/api/test_x.py -k rename -q'`, serial; with more than two workers (`-n 4`) it waits for a gate slot, as the suite does |
   | `make container-test-fast` | while iterating: what this change most likely breaks, first failure stops it; exits 10 when the change needs `container-test` (CONTRIBUTING.md). Not the gate - `container-verify` is |
   | `make container-test-coverage` | pytest with coverage instrumentation (slower, python only) |
   | `make container-test-py314` | the tests in a venv of their own on 3.14 (`DEVKIT_PYTHON`); 3.14 is the default too |

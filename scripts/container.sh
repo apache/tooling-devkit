@@ -21,8 +21,8 @@
 #   DEVKIT_PYTHON=3.14 scripts/container.sh make test
 #
 # A run of the whole suite - `make test`, `test-python`, `verify`, `verify-fresh` or
-# `test-coverage`, or `uv run scripts/ci/verify.py` - is sized to the machine and takes one of its
-# gate slots, whether it comes through a container-* target or straight here: see
+# `test-coverage`, `uv run scripts/ci/verify.py`, or a `make pytest` asking for more than two xdist
+# workers - is sized to the machine and takes one of its gate slots, whether it comes through a container-* target or straight here: see
 # scripts/container-size.sh. A command wrapped in `sh -c` is not recognised as one.
 #
 # Environment:
