@@ -306,7 +306,8 @@ gate_holders() {
 }
 
 # Size this run, and take a slot, waiting for one where all are held. Sets WORKERS, MEMORY and
-# TIMEOUT for container.sh; MEMORY is left as it was where DEVKIT_MEMORY was given.
+# TIMEOUT for container.sh; MEMORY is left as it was where DEVKIT_MEMORY was given, and is empty where
+# the run has no container to cap (GATE_NO_CONTAINER).
 gate_size() {
     _max=$(gate_number DEVKIT_SIZE_WORKERS "$DEVKIT_SIZE_WORKERS")
     _given_workers=''
@@ -373,5 +374,6 @@ gate_size() {
         _where='no slot: no git directory to share them in, or no flock that works'
         echo "container.sh: $_where - sized, but not kept from other runs" >&2
     fi
+    [ -z "${GATE_NO_CONTAINER:-}" ] || MEMORY=''
     echo "container.sh: $WORKERS pytest workers in ${MEMORY:-no cap}, deadline ${TIMEOUT:-none}s ($_where)" >&2
 }
