@@ -118,6 +118,36 @@ case $err in
 *) fail "a target defined again in the service gave no warning: $err" ;;
 esac
 
+# The gate's Python tests: the selection, and the whole suite where it answers 10. A stand-in `uv` notes
+# each call, and answers the selection with GATE_STATUS.
+mkdir -p "$work/bin"
+cat >"$work/bin/uv" <<'STUB'
+#!/bin/sh
+echo "$*" >>"$UV_LOG"
+case "$*" in *--gate*) exit "${GATE_STATUS:-0}" ;; esac
+STUB
+chmod +x "$work/bin/uv"
+selected() {
+    : >"$work/uv.log"
+    status=0
+    PATH="$work/bin:$PATH" UV_LOG="$work/uv.log" GATE_STATUS=$1 make -s --no-print-directory -C "$dir" \
+        test-python-selected PYTEST_WORKERS=2 >/dev/null 2>&1 || status=$?
+}
+selected 0
+[ "$status" -eq 0 ] || fail "test-python-selected fails where the selection passed"
+grep -q -- '--gate -- -n 2' "$work/uv.log" || fail "test-python-selected does not run the gate's selection"
+grep -q '^run pytest' "$work/uv.log" && fail "test-python-selected runs the suite where the selection passed"
+selected 1
+[ "$status" -ne 0 ] || fail "test-python-selected passes where the selection failed"
+grep -q '^run pytest' "$work/uv.log" && fail "test-python-selected runs the suite where the selection failed"
+selected 10
+[ "$status" -eq 0 ] || fail "test-python-selected fails where the whole suite passed"
+grep -q '^run pytest -n 2' "$work/uv.log" || fail "test-python-selected does not run the whole suite for a 10"
+# verify.py keys a stage on `make -n`: that must print the recipe and run none of it
+: >"$work/uv.log"
+PATH="$work/bin:$PATH" UV_LOG="$work/uv.log" GATE_STATUS=10 make -n -s -C "$dir" test-python-selected >/dev/null 2>&1
+[ ! -s "$work/uv.log" ] || fail "make -n test-python-selected runs what it should only print: $(cat "$work/uv.log")"
+
 if [ "$failures" -gt 0 ]; then
     echo "$failures check(s) failed" >&2
     exit 1

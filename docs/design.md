@@ -424,3 +424,29 @@ again next time.
 **Not done.** A cap on how many stages run at once: the light stages cost little, and it is the suites that
 make the peak. Sizing the isolated slot by `MemAvailable`: the slots are sized by `MemTotal` on a host for the
 reasons in `container-size.sh`, and the same reasons hold on a box.
+
+## 15. A service's gate may run the fast stage's selection, with CI as the backstop
+
+**Why.** On an isx box with four pytest workers, tooling-agenda's gate took about ten minutes, most of it
+the whole suite: about 1550 worker-seconds, on a box whose cores are about 1.35 times slower than a CI
+runner's. Fewer examples and another stage order took minutes off, not most of it. A gate that slow is a gate
+that is skipped. CI runs the whole suite on every push in any case.
+
+**Decided.** `make test-python-selected` runs `fast_stage.py run --gate`: the fast stage's selection, without
+`--maxfail=1`, so that every failure in it is reported, and without vitest, which is a stage of the gate of its
+own. Where the change needs the whole suite - a trigger of `FULL_WHEN`, or a selection past the share limit -
+`--gate` runs nothing and exits 10, and the target runs `test-python`, which also records the durations the
+selection is planned from. A selection of no test file passes. A service takes it by naming the stage in its
+`verify.toml`; the kit's default stays the whole suite.
+
+The target reaches `test-python` through a variable of its own (`THE_SUITE`): make runs a recipe line that
+names `$(MAKE)` itself even under `make -n`, and `verify.py` reads each stage's recipe with `make -n`.
+
+**Costs.** A failure the selection does not hold is found by CI after the push, not before it: a second round,
+and a review that can start on a commit that fails. The selection audit counts these on every pull request.
+The durations the selection is planned from come from full runs, which the gate now makes only where the change
+needs one; a test file with none is estimated from its test count.
+
+**Not done.** The selection with `--maxfail=1`, as the fast stage has it: the gate is the last local run
+before a push, and one failure at a time is a push round per failure. A gate that runs the selection and then
+the whole suite in the background: it would still hold the slot, and the load, for as long as the suite.
